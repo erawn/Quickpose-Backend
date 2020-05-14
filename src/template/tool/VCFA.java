@@ -39,6 +39,8 @@ public class VCFA implements Tool {
   boolean setup = false; 
   private Frame mainFrame;
 
+  public Tree codeTree;
+  
   public String getMenuTitle() {
     return "##tool.name##";
   }
@@ -47,36 +49,39 @@ public class VCFA implements Tool {
   public void init(Base base) {
     // Store a reference to the Processing application itself
     this.base = base;
-    
   }
 
 
   public void run() {
 	if(setup == false) {
-		prepareGUI();
+		setup();
 	}
     // Get the currently active Editor to run the Tool on it
-    Editor editor = base.getActiveEditor();
-
-    String code = editor.getText();
+     Editor editor = base.getActiveEditor();
+//    String code = editor.getText();
    
-    // Fill in author.name, author.url, tool.prettyVersion and
-    // project.prettyName in build.properties for them to be auto-replaced here.
-    System.out.println("Hello Tool. ##tool.name## ##tool.prettyVersion## by ##author##");
-    System.out.println(code);
+  
+    System.out.println("##tool.name## ##tool.prettyVersion## by ##author##");
   }
   
-  private void prepareGUI() {
+  private void setup() {
 	  mainFrame = new Frame("Example");
 	  mainFrame.setSize(300,300);
 	  mainFrame.setLayout(new GridLayout(3,1));
 	  mainFrame.addWindowListener(new WindowAdapter() {
 	         public void windowClosing(WindowEvent windowEvent){
-	            System.exit(0);
+	            mainFrame.dispose();
 	         }        
 	      }); 
 	  
 	  mainFrame.setVisible(true);
+	  
+	  
+	  Data root = new Data(base.getActiveEditor().getText());
+	  codeTree = new Tree(root);
+	  
+	  
 	  setup = true;
   }
+  
 }
