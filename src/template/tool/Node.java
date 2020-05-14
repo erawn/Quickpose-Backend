@@ -5,7 +5,7 @@ import java.util.List;
 
 public class Node {
 	
-	public int label;
+	public int id;
 	
 	public Data data;
 	public Tree tree;
@@ -17,6 +17,8 @@ public class Node {
 	public Node(Data d, Node p) {
 		data = d;
 		parent = p;
+		id = tree.curId;
+		tree.curId++;
 	}
 	
 	public void addChild(Data d) {
@@ -29,6 +31,23 @@ public class Node {
 		return parent == null;
 	}
 	
+	public void remove() {
+		if(isRoot()) {
+			System.out.println("Can't remove root node");
+		}else {
+			for(Node child : children) {
+				parent.children.add(child);
+			}
+			for(int i = 0; i < parent.children.size(); i++) {
+				if(parent.children.get(i).id == this.id) {
+					parent.children.remove(i);
+				}
+			}
+			indexRemove(this);
+		}
+		
+	}
+	
 	public boolean isLeaf() {
 		return children.size() == 0;
 	}
@@ -37,6 +56,16 @@ public class Node {
 		allChildren.add(n);
 		if(!this.isRoot()) {
 			parent.indexAdd(n);
+		}
+	}
+	public void indexRemove(Node n) {
+		for(int i = 0; i < allChildren.size(); i++) {
+			if(allChildren.get(i).id == n.id) {
+				allChildren.remove(i);
+			}
+		}
+		if(!this.isRoot()) {
+			parent.indexRemove(n);
 		}
 	}
 }
