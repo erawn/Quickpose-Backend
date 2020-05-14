@@ -28,14 +28,16 @@ package template.tool;
 import processing.app.Base;
 import processing.app.tools.Tool;
 import processing.app.ui.Editor;
-
+import java.awt.*;
+import java.awt.event.*;
 
 // when creating a tool, the name of the main class which implements Tool must
 // be the same as the value defined for project.name in your build.properties
 
-public class HelloTool implements Tool {
+public class VCFA implements Tool {
   Base base;
-
+  boolean setup = false; 
+  private Frame mainFrame;
 
   public String getMenuTitle() {
     return "##tool.name##";
@@ -45,15 +47,36 @@ public class HelloTool implements Tool {
   public void init(Base base) {
     // Store a reference to the Processing application itself
     this.base = base;
+    
   }
 
 
   public void run() {
+	if(setup == false) {
+		prepareGUI();
+	}
     // Get the currently active Editor to run the Tool on it
     Editor editor = base.getActiveEditor();
 
+    String code = editor.getText();
+   
     // Fill in author.name, author.url, tool.prettyVersion and
     // project.prettyName in build.properties for them to be auto-replaced here.
     System.out.println("Hello Tool. ##tool.name## ##tool.prettyVersion## by ##author##");
+    System.out.println(code);
+  }
+  
+  private void prepareGUI() {
+	  mainFrame = new Frame("Example");
+	  mainFrame.setSize(300,300);
+	  mainFrame.setLayout(new GridLayout(3,1));
+	  mainFrame.addWindowListener(new WindowAdapter() {
+	         public void windowClosing(WindowEvent windowEvent){
+	            System.exit(0);
+	         }        
+	      }); 
+	  
+	  mainFrame.setVisible(true);
+	  setup = true;
   }
 }
