@@ -9,5 +9,14 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/processing-app"/>
 	<classpathentry kind="lib" path="/Users/erawn/eclipse-workspace/ProcessingJars/pde.jar"/>
 	<classpathentry kind="lib" path="/Users/erawn/eclipse-workspace/ProcessingJars/core.jar"/>
+	<classpathentry kind="lib" path="lib/commons-io-2.6.jar"/>
+	<classpathentry kind="lib" path="lib/javafx-swt.jar"/>
+	<classpathentry kind="lib" path="lib/javafx.base.jar"/>
+	<classpathentry kind="lib" path="lib/javafx.controls.jar"/>
+	<classpathentry kind="lib" path="lib/javafx.fxml.jar"/>
+	<classpathentry kind="lib" path="lib/javafx.graphics.jar"/>
+	<classpathentry kind="lib" path="lib/javafx.media.jar"/>
+	<classpathentry kind="lib" path="lib/javafx.swing.jar"/>
+	<classpathentry kind="lib" path="lib/javafx.web.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

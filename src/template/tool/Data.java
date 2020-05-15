@@ -1,9 +1,9 @@
 package template.tool;
 
 public class Data {
-	String code; 
+	String path; 
 	
 	public Data(String c) {
-		code = c;
+		path = c;
 	}
 }

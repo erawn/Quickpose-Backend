@@ -8,7 +8,7 @@ public class Tree {
 	public int curId = 0;
 	
 	public Tree(Data d) {
-		root = new Node(d,null);
+		root = new Node(d,this);
 	}
 	
 	public List<Node> getList(){

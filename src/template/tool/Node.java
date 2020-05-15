@@ -14,21 +14,36 @@ public class Node {
 	
 	public List<Node> allChildren;
 	
-	public Node(Data d, Node p) {
-		data = d;
-		parent = p;
+	public Node(Data d,Tree t, Node p) {
+		tree = t;
 		id = tree.curId;
 		tree.curId++;
+		
+		data = d;
+		
+		if(id != 0) {
+			parent = p;
+		}
+	}
+	public Node(Data d, Tree t) {
+		tree = t;
+		if(tree.curId != 0) {
+			System.out.println("Non-root node created without a parent!");
+		}
+		id = tree.curId;
+		tree.curId++;
+		data = d;
+		
 	}
 	
 	public void addChild(Data d) {
-		Node child = new Node(d, this);
+		Node child = new Node(d,tree,this);
 		children.add(child);
 		indexAdd(child);
 	}
 	
 	public boolean isRoot() {
-		return parent == null;
+		return id == 0;
 	}
 	
 	public void remove() {

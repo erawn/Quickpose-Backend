@@ -30,6 +30,14 @@ import processing.app.tools.Tool;
 import processing.app.ui.Editor;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.Iterator;
+
+import org.apache.commons.io.*;
+
+
 
 // when creating a tool, the name of the main class which implements Tool must
 // be the same as the value defined for project.name in your build.properties
@@ -38,8 +46,15 @@ public class VCFA implements Tool {
   Base base;
   boolean setup = false; 
   private Frame mainFrame;
-
+  private File sketchFolder;
+  private File versionsCode;
+  private File versionsImages;
+  private File sketchbookFolder;
   public Tree codeTree;
+  public int currentVersion;
+  public Editor editor;
+  
+  VCFAUI ui;
   
   public String getMenuTitle() {
     return "##tool.name##";
@@ -53,18 +68,32 @@ public class VCFA implements Tool {
 
 
   public void run() {
+
 	if(setup == false) {
-		setup();
+		
+		// FOR TESTING ONLY
+		try {
+			FileUtils.deleteDirectory(new File(base.getActiveEditor().getSketch().getFolder()+"/"+"versions_code"));
+		}catch(IOException e) {
+			
+		}
+		
+		GUISetup();
+		dataSetup();
+		setup = true;
 	}
-    // Get the currently active Editor to run the Tool on it
-     Editor editor = base.getActiveEditor();
-//    String code = editor.getText();
-   
+     
+	 
+     System.out.println(sketchFolder.getAbsolutePath());
+     System.out.println(editor.getMode().getIdentifier());
+     
+     
+     editor.getSketch().reload();
   
     System.out.println("##tool.name## ##tool.prettyVersion## by ##author##");
   }
   
-  private void setup() {
+  private void GUISetup() {
 	  mainFrame = new Frame("Example");
 	  mainFrame.setSize(300,300);
 	  mainFrame.setLayout(new GridLayout(3,1));
@@ -76,12 +105,51 @@ public class VCFA implements Tool {
 	  
 	  mainFrame.setVisible(true);
 	  
+	  ui = new VCFAUI();
+  }
+  
+  private void dataSetup(){
+	  editor = base.getActiveEditor();
+	  sketchFolder = editor.getSketch().getFolder();
+	  String sketchPath = sketchFolder.getAbsolutePath();
+	  versionsCode = new File(sketchPath+"/"+"versions_code");
+	  versionsCode.mkdir();
 	  
-	  Data root = new Data(base.getActiveEditor().getText());
+	  if(editor.getMode().getIdentifier() == "jm.mode.replmode.REPLMode") {
+	    	 System.out.println("Running in REPL Mode");
+	     }
+	  
+	  
+	  String rootFolder = makeVersion(0);
+	  Data root = new Data(rootFolder);
 	  codeTree = new Tree(root);
 	  
-	  
-	  setup = true;
+	  currentVersion = 0;
+  }
+  
+  private String makeVersion(int id) {
+	  File folder = new File(versionsCode.getAbsolutePath() + "/_" + id);
+	  folder.mkdir();
+	  File[] dirListing = sketchFolder.listFiles();
+	  if(dirListing != null) {
+		  for(File f : dirListing) {
+			  if(FilenameUtils.isExtension(f.getName(), "pde")) {
+				  File newFile = new File(folder.getAbsolutePath()+"/"+f.getName());
+				  copyFile(f,newFile);
+			  }
+		  }
+	  }
+	  return folder.getAbsolutePath();
+  }
+
+  
+  private static void copyFile(File src, File dest){
+	  try {
+		Files.copy(src.toPath(), dest.toPath(),StandardCopyOption.REPLACE_EXISTING);
+	} catch (IOException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
   }
   
 }
