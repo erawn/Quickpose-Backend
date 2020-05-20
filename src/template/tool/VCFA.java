@@ -34,10 +34,19 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Iterator;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.*;
+import java.net.*;
 
-
+import javafx.application.Application;
+import javafx.scene.*;
+import javafx.scene.layout.Region;
+import javafx.scene.web.WebEngine;
+import javafx.scene.web.WebView;
+import javafx.stage.*;
 
 // when creating a tool, the name of the main class which implements Tool must
 // be the same as the value defined for project.name in your build.properties
@@ -53,6 +62,8 @@ public class VCFA implements Tool {
   public Tree codeTree;
   public int currentVersion;
   public Editor editor;
+  
+  ScheduledExecutorService windowExecutor;
   
   VCFAUI ui;
   
@@ -81,6 +92,8 @@ public class VCFA implements Tool {
 		GUISetup();
 		dataSetup();
 		setup = true;
+	}else {
+
 	}
      
 	 
@@ -94,18 +107,26 @@ public class VCFA implements Tool {
   }
   
   private void GUISetup() {
-	  mainFrame = new Frame("Example");
-	  mainFrame.setSize(300,300);
-	  mainFrame.setLayout(new GridLayout(3,1));
-	  mainFrame.addWindowListener(new WindowAdapter() {
-	         public void windowClosing(WindowEvent windowEvent){
-	            mainFrame.dispose();
-	         }        
-	      }); 
+//	  mainFrame = new Frame("Example");
+//	  mainFrame.setSize(300,300);
+//	  mainFrame.setLayout(new GridLayout(3,1));
+//	  mainFrame.addWindowListener(new WindowAdapter() {
+//	         public void windowClosing(WindowEvent windowEvent){
+//	            mainFrame.dispose();
+//	         }        
+//	      }); 
+//	  
+//	  mainFrame.setVisible(true);
 	  
-	  mainFrame.setVisible(true);
+	  Runnable window = new Runnable() {
+		  public void run() {
+			  Application.launch(VCFAUI.class,(String[])null);
+		  }
+	  };
+	  windowExecutor = Executors.newScheduledThreadPool(1);
+	  windowExecutor.schedule(window, 0, TimeUnit.SECONDS);
+	
 	  
-	  ui = new VCFAUI();
   }
   
   private void dataSetup(){
@@ -125,8 +146,20 @@ public class VCFA implements Tool {
 	  codeTree = new Tree(root);
 	  
 	  currentVersion = 0;
+	  
+	  Runnable updateLoop = new Runnable() {
+		  public void run() {
+			  update();
+		  }
+	  };
+	  ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+	  executor.scheduleAtFixedRate(updateLoop, 0, 1, TimeUnit.SECONDS);
   }
   
+  
+  private void update() {
+	  System.out.println("Updating...");
+  }
   private String makeVersion(int id) {
 	  File folder = new File(versionsCode.getAbsolutePath() + "/_" + id);
 	  folder.mkdir();
@@ -151,5 +184,7 @@ public class VCFA implements Tool {
 		e.printStackTrace();
 	}
   }
+  
+ 
   
 }

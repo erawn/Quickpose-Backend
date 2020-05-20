@@ -11,59 +11,86 @@ import javax.swing.SwingUtilities;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-import javafx.scene.Scene;
+import javafx.scene.Scene.*;
 import javafx.scene.control.Button;
+import javafx.scene.web.*;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
+
+import java.awt.Dimension;
+import java.awt.Toolkit;
+import java.io.File;
+import java.net.URL;
+
 import javax.swing.*;
-public class VCFAUI extends JFrame{
+public class VCFAUI extends Application{
+
+	private static final long serialVersionUID = 1L;
 	
-	private final JButton up = new JButton("Up");
-	private final JButton down = new JButton("Down");
-
-	 public VCFAUI(){
-		 setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);		
-		 setBounds(100, 100, 768, 695);	
-		 initAndShowGUI();
+	public VCFAUI(){
+		
+	}
+		
+//		 setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);		
+//		 setBounds(100, 100, 768, 695);	
+//		 initAndShowGUI();
+		 
+	 @Override
+	 public void start(final Stage primaryStage) {
+		 Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+		 Stage window = new Stage();
+		 //need java 8 to implement lambda functions????
+		 //window.setOnCloseRequest(e->{Platform.exit(); System.exit(0);});
+		 WebView webView = new WebView();
+	 	 WebEngine webEngine = webView.getEngine();
+	 	 System.out.println(System.getProperty("java.class.path"));
+	 	 URL url = this.getClass().getResource(getPath("interface.html"));
+	 	 webEngine.load(url.toExternalForm());
+	     Scene scene = new Scene(webView,600,600);
+		 window.setScene(scene);
+		 window.setX((3*screenSize.width)/4);
+		 window.setY((screenSize.height)/2);
+		 window.show();
 	 }
-	 private void initAndShowGUI() {
-			// This method is invoked on Swing thread
-			final JFXPanel fxPanel = new JFXPanel();
-			this.add(fxPanel);
-
-			Platform.runLater(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						initFX(fxPanel);
-					} catch (Exception e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
-			});
+		 
+	 
+	
+	
+//	
+//	 private void initAndShowGUI() {
+//			// This method is invoked on Swing thread
+//			final JFXPanel fxPanel = new JFXPanel();
+//			this.add(fxPanel);
+//
+//			Platform.runLater(new Runnable() {
+//				@Override
+//				public void run() {
+//					try {
+//						initFX(fxPanel);
+//					} catch (Exception e) {
+//						// TODO Auto-generated catch block
+//						e.printStackTrace();
+//					}
+//				}
+//			});
+//		}
+//	 
+//	private void initFX(JFXPanel fxPanel) {
+//	        // This method is invoked on the JavaFX thread
+//		 	WebView webView = new WebView();
+//		 	WebEngine webEngine = webView.getEngine();
+//		 	System.out.println(System.getProperty("java.class.path"));
+//		 	URL url = this.getClass().getResource(getPath("interface.html"));
+//		 	webEngine.load(url.toExternalForm());
+//	        Scene scene = new Scene(webView,600,600);
+//	        
+//	        fxPanel.setScene(scene);
+//	        fxPanel.setVisible(true);
+//	    }
+	public String getPath(String theFilename) {
+		if (theFilename.startsWith("/")) {
+			return theFilename;
 		}
-	 
-	 private static void initFX(JFXPanel fxPanel) {
-	        // This method is invoked on the JavaFX thread
-	        Scene scene = createScene();
-	        fxPanel.setScene(scene);
-	    }
-	 
-	 private static Scene createScene() {
-	        Group  root  =  new  Group();
-	        Scene  scene  =  new  Scene(root, Color.ALICEBLUE);
-	        Text  text  =  new  Text();
-	        
-	        text.setX(40);
-	        text.setY(100);
-	        text.setFont(new Font(25));
-	        text.setText("Welcome JavaFX!");
-
-	        root.getChildren().add(text);
-	        root.getChildren().add(up);
-	        root.getChildren().add(down);
-
-	        return (scene);
-	    }
+		return File.separator + "data" + File.separator + theFilename;
+	}
 }

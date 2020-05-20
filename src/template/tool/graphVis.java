@@ -1,40 +1,42 @@
 package template.tool;
-import java.io.File;
-import java.io.IOException;
 import java.net.URL;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.ResourceBundle;
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.scene.layout.Region;
+import javafx.scene.web.WebEngine;
+import javafx.scene.web.WebView;
+import javafx.stage.Stage;
 
-import javax.imageio.ImageIO;
+public class graphVis extends Application{
+	
+	private Scene scene;
+	MyBrowser myBrowser;
+	
+	@Override
+	public void start(Stage primaryStage) {
+	    primaryStage.setTitle("java-buddy.blogspot.com");
 
-import javafx.beans.InvalidationListener;
-import javafx.beans.Observable;
-import javafx.embed.swing.SwingFXUtils;
-import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.fxml.Initializable;
-import javafx.geometry.Pos;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
-import javafx.scene.control.Label;
-import javafx.scene.image.WritableImage;
-import javafx.scene.input.Clipboard;
-import javafx.scene.input.ClipboardContent;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
-import javafx.scene.shape.Rectangle;
-import javafx.stage.FileChooser;
+	    myBrowser = new MyBrowser();
+	    scene = new Scene(myBrowser, 640, 480);
 
-public class graphVis extends AnchorPane implements Initialize{
+	    primaryStage.setScene(scene);
+	    primaryStage.show();
+	}
+	
+	class MyBrowser extends Region{
 
+	    final String hellohtml = "hello.html";
+
+	    WebView webView = new WebView();
+	    WebEngine webEngine = webView.getEngine();
+	        
+	    public MyBrowser(){
+
+	        URL urlHello = getClass().getResource("hello.html");
+	        webEngine.load(urlHello.toExternalForm());
+	    
+	        getChildren().add(webView);
+	    }
+	}
 	
 }
