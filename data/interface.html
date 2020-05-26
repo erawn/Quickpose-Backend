@@ -4,113 +4,114 @@
   <meta name="viewport" 
         content="width=device-width, 
         initial-scale=1.0, 
-        user-scalable=no" />
-  <title>Drag/Drop/Bounce</title>
+        user-scalable=yes" />
+  <title>Visual Version Control for Processing</title>
+  
   <style>
-    #container {
-      width: 100%;
-      height: 400px;
-      background-color: #333;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      border-radius: 7px;
-      touch-action: none;
-    }
-    #item {
-      width: 100px;
-      height: 100px;
-      background-color: rgb(245, 230, 99);
-      border: 10px solid rgba(136, 136, 136, .5);
-      border-radius: 50%;
-      touch-action: none;
-      user-select: none;
-    }
-    #item:active {
-      background-color: rgba(168, 218, 220, 1.00);
-    }
-    #item:hover {
-      cursor: pointer;
-      border-width: 20px;
-    }
+ 
   </style>
 </head>
 
 <body>
+<canvas id="c" width=device-width height=device-height style="border:1px solid #ccc"></canvas>
+  <script src = https://cdn.jsdelivr.net/npm/zeromq@6.0.0-beta.6/lib/index.min.js></script>
+  <script src ="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/3.6.3/fabric.min.js"></script>
+<script type="text/javascript" src="index.js"></script>
 
-  <div id="outerContainer">
-    <div id="container">
-      <div id="item">
 
-      </div>
-    </div>
-  </div>
+<script>
 
-  <script>
-    var dragItem = document.querySelector("#item");
-    var container = document.querySelector("#container");
 
-    var active = false;
-    var currentX;
-    var currentY;
-    var initialX;
-    var initialY;
-    var xOffset = 0;
-    var yOffset = 0;
 
-    container.addEventListener("touchstart", dragStart, false);
-    container.addEventListener("touchend", dragEnd, false);
-    container.addEventListener("touchmove", drag, false);
+	  var canvas = new fabric.Canvas('c');
+	  canvas.add(new fabric.Circle({ radius: 30, fill: '#f55', top: 100, left: 100 }));
+	  canvas.add(new fabric.Circle({ radius: 30, fill: '#f55', top: 50, left: 100 }));
+	  canvas.add(new fabric.Circle({ radius: 30, fill: '#f55', top: 100, left: 50 }));
+	  
 
-    container.addEventListener("mousedown", dragStart, false);
-    container.addEventListener("mouseup", dragEnd, false);
-    container.addEventListener("mousemove", drag, false);
+	objs = canvas.getObjects();
+	objs.forEach(function(item,i){
+		item.hasControls = item.hasBorders = false;
+	});
+	
+	
+	  canvas.on({
+	    'mouse:down': function(e) {
+	      if (e.target) {
+	        e.target.opacity = 0.5;
+	        canvas.renderAll();
+	
+	      }
+	    },
+	    'mouse:up': function(e) {
+	      if (e.target) {
+	        e.target.opacity = 1;
+	        canvas.renderAll();
+	      }
+	    },
+	    'object:moved': function(e) {
+	      e.target.opacity = 0.5;
+	    },
+	    'object:modified': function(e) {
+	      e.target.opacity = 1;
+	    }
+	  });
+	  this.__canvases.push(canvas);
+	  
 
-    function dragStart(e) {
-      if (e.type === "touchstart") {
-        initialX = e.touches[0].clientX - xOffset;
-        initialY = e.touches[0].clientY - yOffset;
-      } else {
-        initialX = e.clientX - xOffset;
-        initialY = e.clientY - yOffset;
-      }
+	  var amqp = require('amqplib/callback_api');
 
-      if (e.target === dragItem) {
-        active = true;
-      }
-    }
+	  var args = process.argv.slice(2);
 
-    function dragEnd(e) {
-      initialX = currentX;
-      initialY = currentY;
+	  if (args.length == 0) {
+	    console.log("Usage: rpc_client.js num");
+	    process.exit(1);
+	  }
 
-      active = false;
-    }
+	  amqp.connect('amqp://localhost', function(error0, connection) {
+	    if (error0) {
+	      throw error0;
+	    }
+	    connection.createChannel(function(error1, channel) {
+	      if (error1) {
+	        throw error1;
+	      }
+	      channel.assertQueue('', {
+	        exclusive: true
+	      }, function(error2, q) {
+	        if (error2) {
+	          throw error2;
+	        }
+	        var correlationId = generateUuid();
+	        var num = parseInt(args[0]);
 
-    function drag(e) {
-      if (active) {
-      
-        e.preventDefault();
-      
-        if (e.type === "touchmove") {
-          currentX = e.touches[0].clientX - initialX;
-          currentY = e.touches[0].clientY - initialY;
-        } else {
-          currentX = e.clientX - initialX;
-          currentY = e.clientY - initialY;
-        }
+	        console.log(' [x] Requesting fib(%d)', num);
 
-        xOffset = currentX;
-        yOffset = currentY;
+	        channel.consume(q.queue, function(msg) {
+	          if (msg.properties.correlationId == correlationId) {
+	            console.log(' [.] Got %s', msg.content.toString());
+	            setTimeout(function() { 
+	              connection.close(); 
+	              process.exit(0) 
+	            }, 500);
+	          }
+	        }, {
+	          noAck: true
+	        });
 
-        setTranslate(currentX, currentY, dragItem);
-      }
-    }
+	        channel.sendToQueue('rpc_queue',
+	          Buffer.from(num.toString()),{ 
+	            correlationId: correlationId, 
+	            replyTo: q.queue });
+	      });
+	    });
+	  });
 
-    function setTranslate(xPos, yPos, el) {
-      el.style.transform = "translate3d(" + xPos + "px, " + yPos + "px, 0)";
-    }
+	  function generateUuid() {
+	    return Math.random().toString() +
+	           Math.random().toString() +
+	           Math.random().toString();
+	  }
   </script>
 </body>
 

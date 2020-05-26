@@ -1,5 +1,6 @@
 package template.tool;
 import javafx.application.Platform;
+
 import javafx.embed.swing.JFXPanel;
 import javafx.scene.Group;
 import javafx.scene.Scene;
@@ -43,7 +44,7 @@ public class VCFAUI extends Application{
 		 //window.setOnCloseRequest(e->{Platform.exit(); System.exit(0);});
 		 WebView webView = new WebView();
 	 	 WebEngine webEngine = webView.getEngine();
-	 	 System.out.println(System.getProperty("java.class.path"));
+	 	 //System.out.println(System.getProperty("java.class.path"));
 	 	 URL url = this.getClass().getResource(getPath("interface.html"));
 	 	 webEngine.load(url.toExternalForm());
 	     Scene scene = new Scene(webView,600,600);

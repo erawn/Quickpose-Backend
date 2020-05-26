@@ -25,36 +25,37 @@
 
 package template.tool;
 
-import processing.app.Base;
-import processing.app.tools.Tool;
-import processing.app.ui.Editor;
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
+import java.io.BufferedReader;
+import static spark.Spark.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.Iterator;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.io.*;
-import java.net.*;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 
+import javax.servlet.*;
 import javafx.application.Application;
-import javafx.scene.*;
-import javafx.scene.layout.Region;
-import javafx.scene.web.WebEngine;
-import javafx.scene.web.WebView;
-import javafx.stage.*;
+import processing.app.Base;
+import processing.app.tools.Tool;
+import processing.app.ui.Editor;
 
 // when creating a tool, the name of the main class which implements Tool must
 // be the same as the value defined for project.name in your build.properties
-
 public class VCFA implements Tool {
   Base base;
   boolean setup = false; 
-  private Frame mainFrame;
   private File sketchFolder;
   private File versionsCode;
   private File versionsImages;
@@ -62,9 +63,8 @@ public class VCFA implements Tool {
   public Tree codeTree;
   public int currentVersion;
   public Editor editor;
-  
   ScheduledExecutorService windowExecutor;
-  
+  Server server;
   VCFAUI ui;
   
   public String getMenuTitle() {
@@ -87,48 +87,65 @@ public class VCFA implements Tool {
 			FileUtils.deleteDirectory(new File(base.getActiveEditor().getSketch().getFolder()+"/"+"versions_code"));
 		}catch(IOException e) {
 			
-		}
+		}//FOR TESTING ONLY
 		
 		GUISetup();
 		dataSetup();
+		get("/hello", (request, response) -> "Hello World!");
+		try {
+			networkSetup();
+		} catch (URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		 Runnable updateLoop = new Runnable() {
+			  public void run() {
+				  update();
+			  }
+		  };
+		  ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+		  executor.scheduleAtFixedRate(updateLoop, 0, 1, TimeUnit.SECONDS);
 		setup = true;
 	}else {
-
+		//Reopen Window
 	}
-     
 	 
-     System.out.println(sketchFolder.getAbsolutePath());
-     System.out.println(editor.getMode().getIdentifier());
+     //System.out.println("Sketch Folder at : " + sketchFolder.getAbsolutePath());
+     //System.out.println(editor.getMode().getIdentifier());
      
      
      editor.getSketch().reload();
   
     System.out.println("##tool.name## ##tool.prettyVersion## by ##author##");
   }
+  private void update() {
+	  //System.out.println("Updating...");
+	  
+  }
+
   
   private void GUISetup() {
-//	  mainFrame = new Frame("Example");
-//	  mainFrame.setSize(300,300);
-//	  mainFrame.setLayout(new GridLayout(3,1));
-//	  mainFrame.addWindowListener(new WindowAdapter() {
-//	         public void windowClosing(WindowEvent windowEvent){
-//	            mainFrame.dispose();
-//	         }        
-//	      }); 
-//	  
-//	  mainFrame.setVisible(true);
-	  
 	  Runnable window = new Runnable() {
 		  public void run() {
 			  Application.launch(VCFAUI.class,(String[])null);
 		  }
 	  };
-	  windowExecutor = Executors.newScheduledThreadPool(1);
+	  windowExecutor = Executors.newScheduledThreadPool(2);
 	  windowExecutor.schedule(window, 0, TimeUnit.SECONDS);
-	
-	  
   }
-  
+  private void networkSetup() throws URISyntaxException {
+	  Runnable client = new Runnable() {
+		  public void run() {
+			  try {
+				//server = new Server();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		  }
+	  };
+	  //windowExecutor.schedule(client, 0, TimeUnit.SECONDS);
+  }
   private void dataSetup(){
 	  editor = base.getActiveEditor();
 	  sketchFolder = editor.getSketch().getFolder();
@@ -147,19 +164,11 @@ public class VCFA implements Tool {
 	  
 	  currentVersion = 0;
 	  
-	  Runnable updateLoop = new Runnable() {
-		  public void run() {
-			  update();
-		  }
-	  };
-	  ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-	  executor.scheduleAtFixedRate(updateLoop, 0, 1, TimeUnit.SECONDS);
+	 
   }
   
   
-  private void update() {
-	  System.out.println("Updating...");
-  }
+ 
   private String makeVersion(int id) {
 	  File folder = new File(versionsCode.getAbsolutePath() + "/_" + id);
 	  folder.mkdir();

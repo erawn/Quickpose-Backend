@@ -2,12 +2,12 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="data"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/processing-app"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
 		<attributes>
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry combineaccessrules="false" kind="src" path="/processing-app"/>
 	<classpathentry kind="lib" path="/Users/erawn/eclipse-workspace/ProcessingJars/pde.jar"/>
 	<classpathentry kind="lib" path="/Users/erawn/eclipse-workspace/ProcessingJars/core.jar"/>
 	<classpathentry kind="lib" path="lib/commons-io-2.6.jar"/>
@@ -19,6 +19,25 @@
 	<classpathentry kind="lib" path="lib/javafx.media.jar"/>
 	<classpathentry kind="lib" path="lib/javafx.swing.jar"/>
 	<classpathentry kind="lib" path="lib/javafx.web.jar"/>
-	<classpathentry kind="lib" path="/Users/erawn/eclipse-workspace/ProcessingJars/jeromq-0.5.2.jar"/>
+	<classpathentry kind="lib" path="/Users/erawn/eclipse-workspace/ProcessingJars/json-20200518.jar"/>
+	<classpathentry kind="lib" path="lib/Websocket Servlet.jar"/>
+	<classpathentry kind="lib" path="lib/j2html-1.4.0.jar"/>
+	<classpathentry kind="lib" path="lib/javax-websocket-client-impl-9.4.29.v20200521.jar"/>
+	<classpathentry kind="lib" path="lib/javax-websocket-server-impl-9.4.29.v20200521.jar"/>
+	<classpathentry kind="lib" path="lib/javax.websocket-api-1.0.jar"/>
+	<classpathentry kind="lib" path="lib/javax.websocket-api-1.1-javadoc.jar"/>
+	<classpathentry kind="lib" path="lib/javax.websocket-api-1.1-sources.jar"/>
+	<classpathentry kind="lib" path="lib/websocket-api-9.4.29.v20200521.jar"/>
+	<classpathentry kind="lib" path="lib/websocket-client-9.4.29.v20200521.jar"/>
+	<classpathentry kind="lib" path="lib/websocket-server-9.4.29.v20200521-javadoc.jar"/>
+	<classpathentry kind="lib" path="lib/spark-core-2.9.1.jar"/>
+	<classpathentry kind="lib" path="lib/spark-core-2.9.1-javadoc.jar"/>
+	<classpathentry kind="lib" path="lib/spark-core-2.9.1-sources.jar"/>
+	<classpathentry kind="lib" path="lib/jetty-all-9.4.29.v20200521-uber.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-simple-1.7.30.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-api-1.7.30.jar"/>
+	<classpathentry kind="lib" path="lib/servlet-api-3.0-alpha-1-javadoc.jar"/>
+	<classpathentry kind="lib" path="lib/servlet-api-3.0-alpha-1-sources.jar"/>
+	<classpathentry kind="lib" path="lib/servlet-api-3.0-alpha-1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
