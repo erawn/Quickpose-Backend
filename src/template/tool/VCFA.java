@@ -153,8 +153,8 @@ public class VCFA implements Tool {
 		  response.type("application/json");
 		  return new JsonMaker().getJson();
 	  });
-	  post("/fork/:id", (request, response) -> {
-		  System.out.println("Fork on :"+ request.params(":id"));
+	  get("/fork/:name", (request, response) -> {
+		  System.out.println("Fork on :"+ request.params(":name"));
 		  return "Success";
 	  });
 	  

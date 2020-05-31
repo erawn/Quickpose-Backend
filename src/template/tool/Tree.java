@@ -1,7 +1,9 @@
 package template.tool;
 
 import java.util.List;
-
+import org.json.*;
+import java.io.FileWriter;
+import java.io.IOException;
 public class Tree {
 
 	public Node root;
@@ -14,4 +16,13 @@ public class Tree {
 	public List<Node> getList(){
 		return root.allChildren;
 	}
+	
+	public String getJson() {
+		JSONArray versions = new JSONArray();
+		
+		
+		
+		
+        return "{ \"hello\" : \"world\"}";
+    }
 }
