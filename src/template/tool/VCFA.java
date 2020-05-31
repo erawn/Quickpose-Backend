@@ -27,8 +27,11 @@ package template.tool;
 
 import static spark.Spark.*;
 import static spark.Filter.*;
+
+import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.Executors;
@@ -65,6 +68,7 @@ public class VCFA implements Tool {
   public void init(Base base) {
     // Store a reference to the Processing application itself
     this.base = base;
+    
   }
 
 
@@ -81,9 +85,8 @@ public class VCFA implements Tool {
 		
 		
 		
-		networkSetup();
-		
 		dataSetup();
+		networkSetup();
 		GUISetup();
 		Runnable updateLoop = new Runnable() {
 			  public void run() {
@@ -94,8 +97,6 @@ public class VCFA implements Tool {
 		  executor.scheduleAtFixedRate(updateLoop, 0, 1, TimeUnit.SECONDS);
 		setup = true;
 	}else {
-		windowExecutor.shutdownNow();
-		GUISetup();
 	}
 	 
      //System.out.println("Sketch Folder at : " + sketchFolder.getAbsolutePath());
@@ -144,22 +145,20 @@ public class VCFA implements Tool {
 		        });
 
 		before((request, response) -> response.header("Access-Control-Allow-Origin", "*"));
-	  get("/hello", (request, response) -> "Hello World!");
-	  get("/hello/:name", (request, response) -> {
-		  System.out.println("request : " + request.params(":name"));
-		 return "Hello, " + request.params(":name"); 
-	  });
 	  get("/versions.json", (request, response) -> {
 		  response.type("application/json");
-		
 		  return codeTree.getJSONTest();
 	  });
 	  get("/fork/:name", (request, response) -> {
 		  System.out.println("Fork on :"+ request.params(":name"));
+		  //fork(Integer.parseInt(request.params(":name")));
 		  return "Success";
 	  });
-	  
-	  
+	  get("/select/:name", (request, response) -> {
+		  System.out.println("Select Node :"+ request.params(":name"));
+		  //changeActiveVersion(Integer.parseInt(request.params(":name")));
+		  return "Success";
+	  });
   }
   private void dataSetup(){
 	  editor = base.getActiveEditor();
@@ -172,7 +171,6 @@ public class VCFA implements Tool {
 	    	 System.out.println("Running in REPL Mode");
 	     }
 	  
-	  
 	  String rootFolder = makeVersion(0);
 	  Data root = new Data(rootFolder);
 	  codeTree = new Tree(root);
@@ -183,6 +181,32 @@ public class VCFA implements Tool {
   }
   
   
+ private void fork(int id) {
+	 if(codeTree.idExists(id)) {
+		 Node parent = codeTree.getNode(id);
+		 Data data = new Data("");
+		 if(parent != null) {
+			 Node child = parent.addChild(data);
+			 child.data.path = makeVersion(child.id);
+			 changeActiveVersion(child.id);
+		 }
+		 
+	 }
+	 
+ }
+ private void changeActiveVersion(int id) {
+	 File versionFolder = new File(codeTree.getNode(id).data.path);
+	 File[] versionListing = versionFolder.listFiles();
+	 if(versionListing != null) {
+		  for(File f : versionListing) {
+			  if(FilenameUtils.isExtension(f.getName(), "pde")) {
+				  File newFile = new File(sketchFolder.getAbsolutePath()+"/"+f.getName());
+				  copyFile(f,newFile);
+			  }
+		  }
+	  }
+ }
+ 
  
   private String makeVersion(int id) {
 	  File folder = new File(versionsCode.getAbsolutePath() + "/_" + id);

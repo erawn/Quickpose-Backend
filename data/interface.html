@@ -15,7 +15,7 @@
 <body>
 <p id="testText"> Loading...</p>
 <script src="https://d3js.org/d3.v4.min.js"></script>
-<svg width="960" height="600"></svg>
+<svg width="100" height="100"></svg>
 <script>
 
 
@@ -24,7 +24,10 @@
 var request = 'http://192.168.4.30:8080';
 
 const sendFork = async (url, id) => {
-	const response = await fetch(url + '/fork/id' + id);
+	const response = await fetch(url + '/fork/' + id);
+}
+const sendSelect = async (url, id) => {
+	const response = await fetch(url + '/select/' + id);
 }
 
 var data = null;
@@ -53,18 +56,30 @@ const requestData = async (url) => {
   { id: "pike"  , group: 2, label: "Pikes"  , level: 2 }
 ] */
 var baseNodes = [
-	  { id: "fish"  , group: 2, label: "Root"   , level: 1 },
+	 
+	] 
+/* 	var baseLinks = [
+		{ target: "mammal", source: "dog" , strength: 0.7 },
+		{ target: "mammal", source: "cat" , strength: 0.7 },
+	  { target: "mammal", source: "fox" , strength: 0.7 },
+	  { target: "mammal", source: "elk" , strength: 0.7 },
+	  { target: "insect", source: "ant" , strength: 0.7 },
+	  { target: "insect", source: "bee" , strength: 0.7 },
+	  { target: "fish"  , source: "carp", strength: 0.7 },
+	  { target: "fish"  , source: "pike", strength: 0.7 },
+	  { target: "cat"   , source: "elk" , strength: 0.1 },
+	  { target: "carp"  , source: "ant" , strength: 0.1 },
+	  { target: "elk"   , source: "bee" , strength: 0.1 },
+	  { target: "dog"   , source: "cat" , strength: 0.1 },
+	  { target: "fox"   , source: "ant" , strength: 0.1 },
+		{ target: "pike"  , source: "cat" , strength: 0.1 }
 	]
-var baseLinks = [
-
-
-]
-
-
+ */
+var baseLinks = [];
 var nodes = [...baseNodes]
 var links = [...baseLinks]
-console.log(nodes);
-console.log(links);
+//console.log(nodes);
+//console.log(links);
 
 
 
@@ -154,22 +169,24 @@ var dragDrop = d3.drag().on('start', function (node) {
 // we either update the data according to the selection
 // or reset the data if the same node is clicked twice
 function selectNode(selectedNode) {
+	
   if (selectedId === selectedNode.id) {
     selectedId = undefined
-    resetData()
+    sendFork(request,selectedNode.id);
     updateSimulation()
   } else {
     selectedId = selectedNode.id
-    updateData(selectedNode)
+    sendSelect(request,selectedNode.id);
+    //updateData(selectedNode)
     updateSimulation()
   }
-
-  var neighbors = getNeighbors(selectedNode)
-
+  //selectedNode.attr('fill', function (node) {return 'blue'})
+ /*  var neighbors = getNeighbors(selectedNode)
+  
   // we modify the styles to highlight selected nodes
   nodeElements.attr('fill', function (node) { return getNodeColor(node, neighbors) })
   textElements.attr('fill', function (node) { return getTextColor(node, neighbors) })
-  linkElements.attr('stroke', function (link) { return getLinkColor(selectedNode, link) })
+  linkElements.attr('stroke', function (link) { return getLinkColor(selectedNode, link) }) */
 }
 
 // this helper simple adds all nodes and links
@@ -281,23 +298,25 @@ function updateSimulation() {
 // last but not least, we call updateSimulation
 // to trigger the initial render
 
-async function update(){
-	await requestData(request);
-	sendFork(request,count);
-	setTimeout(update,10000);
-	console.log(data[0]);
-	console.log(data[1]);
-	baseNodes.push(...data[0]);
-	baseLinks.push(...data[1]);
-	resetData();
-	console.log(nodes);
-	console.log(links);
+function update(){
+	requestData(request);
+	//sendFork(request,count);
+	
+	//console.log(data[0]);
+	//console.log(data[1]);
+	
+	//console.log(nodes);
+	//console.log(links);
 	if(data != null){
-		document.getElementById("testText").innerHTML = data.hello;
+		baseNodes.push(...data[0]);
+		baseLinks.push(...data[1]);
+		resetData();
+		document.getElementById("testText").innerHTML = "Complete";
 	}
 	
 	count++;
 	updateSimulation();
+	setTimeout(update,1000);
 }
 
 update();

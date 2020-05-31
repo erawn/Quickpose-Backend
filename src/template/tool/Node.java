@@ -25,21 +25,14 @@ public class Node {
 			parent = p;
 		}
 	}
-	public Node(Data d, Tree t) {
-		tree = t;
-		if(tree.curId != 0) {
-			System.out.println("Non-root node created without a parent!");
-		}
-		id = tree.curId;
-		tree.curId++;
-		data = d;
-		
-	}
 	
-	public void addChild(Data d) {
+	
+	
+	public Node addChild(Data d) {
 		Node child = new Node(d,tree,this);
 		children.add(child);
 		indexAdd(child);
+		return child;
 	}
 	
 	public boolean isRoot() {
