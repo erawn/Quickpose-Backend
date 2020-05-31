@@ -25,17 +25,10 @@
 
 package template.tool;
 
-import java.io.BufferedReader;
 import static spark.Spark.*;
+import static spark.Filter.*;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.Executors;
@@ -44,8 +37,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-
-import javax.servlet.*;
 import javafx.application.Application;
 import processing.app.Base;
 import processing.app.tools.Tool;
@@ -64,7 +55,6 @@ public class VCFA implements Tool {
   public int currentVersion;
   public Editor editor;
   ScheduledExecutorService windowExecutor;
-  Server server;
   VCFAUI ui;
   
   public String getMenuTitle() {
@@ -89,16 +79,13 @@ public class VCFA implements Tool {
 			
 		}//FOR TESTING ONLY
 		
-		GUISetup();
+		
+		
+		networkSetup();
+		
 		dataSetup();
-		get("/hello", (request, response) -> "Hello World!");
-		try {
-			networkSetup();
-		} catch (URISyntaxException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		 Runnable updateLoop = new Runnable() {
+		GUISetup();
+		Runnable updateLoop = new Runnable() {
 			  public void run() {
 				  update();
 			  }
@@ -107,7 +94,8 @@ public class VCFA implements Tool {
 		  executor.scheduleAtFixedRate(updateLoop, 0, 1, TimeUnit.SECONDS);
 		setup = true;
 	}else {
-		//Reopen Window
+		windowExecutor.shutdownNow();
+		GUISetup();
 	}
 	 
      //System.out.println("Sketch Folder at : " + sketchFolder.getAbsolutePath());
@@ -133,18 +121,44 @@ public class VCFA implements Tool {
 	  windowExecutor = Executors.newScheduledThreadPool(2);
 	  windowExecutor.schedule(window, 0, TimeUnit.SECONDS);
   }
-  private void networkSetup() throws URISyntaxException {
-	  Runnable client = new Runnable() {
-		  public void run() {
-			  try {
-				//server = new Server();
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		  }
-	  };
-	  //windowExecutor.schedule(client, 0, TimeUnit.SECONDS);
+  private void networkSetup(){
+	  port(8080);
+	  options("/*",
+		        (request, response) -> {
+
+		            String accessControlRequestHeaders = request
+		                    .headers("Access-Control-Request-Headers");
+		            if (accessControlRequestHeaders != null) {
+		                response.header("Access-Control-Allow-Headers",
+		                        accessControlRequestHeaders);
+		            }
+
+		            String accessControlRequestMethod = request
+		                    .headers("Access-Control-Request-Method");
+		            if (accessControlRequestMethod != null) {
+		                response.header("Access-Control-Allow-Methods",
+		                        accessControlRequestMethod);
+		            }
+
+		            return "OK";
+		        });
+
+		before((request, response) -> response.header("Access-Control-Allow-Origin", "*"));
+	  get("/hello", (request, response) -> "Hello World!");
+	  get("/hello/:name", (request, response) -> {
+		  System.out.println("request : " + request.params(":name"));
+		 return "Hello, " + request.params(":name"); 
+	  });
+	  get("/versions.json", (request, response) -> {
+		  response.type("application/json");
+		  return new JsonMaker().getJson();
+	  });
+	  post("/fork/:id", (request, response) -> {
+		  System.out.println("Fork on :"+ request.params(":id"));
+		  return "Success";
+	  });
+	  
+	  
   }
   private void dataSetup(){
 	  editor = base.getActiveEditor();
@@ -193,7 +207,11 @@ public class VCFA implements Tool {
 		e.printStackTrace();
 	}
   }
-  
+  public class JsonMaker {
+	    public String getJson() {
+	        return "{ \"hello\" : \"world\"}";
+	    }
+	}
  
   
 }

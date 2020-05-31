@@ -8,110 +8,77 @@
   <title>Visual Version Control for Processing</title>
   
   <style>
- 
+
   </style>
 </head>
 
 <body>
+<p id="testText"> Loading...</p>
 <canvas id="c" width=device-width height=device-height style="border:1px solid #ccc"></canvas>
-  <script src = https://cdn.jsdelivr.net/npm/zeromq@6.0.0-beta.6/lib/index.min.js></script>
-  <script src ="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/3.6.3/fabric.min.js"></script>
-<script type="text/javascript" src="index.js"></script>
+
+<script src ="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/3.6.3/fabric.min.js"></script>
 
 
 <script>
 
+var request = new Request('http://192.168.4.30:8080/versions.json');
 
 
-	  var canvas = new fabric.Canvas('c');
-	  canvas.add(new fabric.Circle({ radius: 30, fill: '#f55', top: 100, left: 100 }));
-	  canvas.add(new fabric.Circle({ radius: 30, fill: '#f55', top: 50, left: 100 }));
-	  canvas.add(new fabric.Circle({ radius: 30, fill: '#f55', top: 100, left: 50 }));
+var data = null;
+var count = 0;
+const requestData = async (url) => {
+	const response = await fetch(url);
+	const json = await response.json();
+	console.log(json);
+	data = json;
+	
+}
+function update(){
+	requestData(request);
+	setTimeout(update,1000);
+	console.log(count);
+	if(data != null){
+		document.getElementById("testText").innerHTML = data.hello;
+	}
+	
+	count++;
+}
+update();
+
+
+  var canvas = new fabric.Canvas('c');
+  canvas.add(new fabric.Circle({ radius: 30, fill: '#f55', top: 100, left: 100, id: 1 }));
+  canvas.add(new fabric.Circle({ radius: 20, fill: '#f55', top: 100, left: 100 }));
+  canvas.add(new fabric.Circle({ radius: 10, fill: '#f55', top: 100, left: 100 }));
+  canvas.item(0).hasControls = canvas.item(0).hasBorders = false;
+
+  obj = canvas.getObjects();
+  obj.forEach(function(item,i) {
+  	item.hasControls = false;
+  	item.hasBorders = false;	
+  });
+
+  canvas.on({
+    'mouse:down': function(e) {
+      if (e.target) {
+        e.target.opacity = 0.5;
+        canvas.renderAll();
+      }
+    },
+    'mouse:up': function(e) {
+      if (e.target) {
+        e.target.opacity = 1;
+        canvas.renderAll();
+      }
+    },
+    'object:moved': function(e) {
+      e.target.opacity = 0.5;
+    },
+    'object:modified': function(e) {
+      e.target.opacity = 1;
+    }
+  });
 	  
-
-	objs = canvas.getObjects();
-	objs.forEach(function(item,i){
-		item.hasControls = item.hasBorders = false;
-	});
-	
-	
-	  canvas.on({
-	    'mouse:down': function(e) {
-	      if (e.target) {
-	        e.target.opacity = 0.5;
-	        canvas.renderAll();
-	
-	      }
-	    },
-	    'mouse:up': function(e) {
-	      if (e.target) {
-	        e.target.opacity = 1;
-	        canvas.renderAll();
-	      }
-	    },
-	    'object:moved': function(e) {
-	      e.target.opacity = 0.5;
-	    },
-	    'object:modified': function(e) {
-	      e.target.opacity = 1;
-	    }
-	  });
-	  this.__canvases.push(canvas);
-	  
-
-	  var amqp = require('amqplib/callback_api');
-
-	  var args = process.argv.slice(2);
-
-	  if (args.length == 0) {
-	    console.log("Usage: rpc_client.js num");
-	    process.exit(1);
-	  }
-
-	  amqp.connect('amqp://localhost', function(error0, connection) {
-	    if (error0) {
-	      throw error0;
-	    }
-	    connection.createChannel(function(error1, channel) {
-	      if (error1) {
-	        throw error1;
-	      }
-	      channel.assertQueue('', {
-	        exclusive: true
-	      }, function(error2, q) {
-	        if (error2) {
-	          throw error2;
-	        }
-	        var correlationId = generateUuid();
-	        var num = parseInt(args[0]);
-
-	        console.log(' [x] Requesting fib(%d)', num);
-
-	        channel.consume(q.queue, function(msg) {
-	          if (msg.properties.correlationId == correlationId) {
-	            console.log(' [.] Got %s', msg.content.toString());
-	            setTimeout(function() { 
-	              connection.close(); 
-	              process.exit(0) 
-	            }, 500);
-	          }
-	        }, {
-	          noAck: true
-	        });
-
-	        channel.sendToQueue('rpc_queue',
-	          Buffer.from(num.toString()),{ 
-	            correlationId: correlationId, 
-	            replyTo: q.queue });
-	      });
-	    });
-	  });
-
-	  function generateUuid() {
-	    return Math.random().toString() +
-	           Math.random().toString() +
-	           Math.random().toString();
-	  }
   </script>
 </body>
 
