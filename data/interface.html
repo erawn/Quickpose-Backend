@@ -42,40 +42,26 @@ const requestData = async (url) => {
 
 
 //D3 --------------------------
-/* var baseNodes = [
-  { id: "mammal", group: 0, label: "Mammals", level: 1 },
-  { id: "dog"   , group: 0, label: "Dogs"   , level: 2 },
-  { id: "cat"   , group: 0, label: "Cats"   , level: 2 },
-  { id: "fox"   , group: 0, label: "Foxes"  , level: 2 },
-  { id: "elk"   , group: 0, label: "Elk"    , level: 2 },
-  { id: "insect", group: 1, label: "Insects", level: 1 },
-  { id: "ant"   , group: 1, label: "Ants"   , level: 2 },
-  { id: "bee"   , group: 1, label: "Bees"   , level: 2 },
-  { id: "fish"  , group: 2, label: "Fish"   , level: 1 },
-  { id: "carp"  , group: 2, label: "Carp"   , level: 2 },
-  { id: "pike"  , group: 2, label: "Pikes"  , level: 2 }
-] */
 var baseNodes = [
-	 
-	] 
-/* 	var baseLinks = [
-		{ target: "mammal", source: "dog" , strength: 0.7 },
-		{ target: "mammal", source: "cat" , strength: 0.7 },
-	  { target: "mammal", source: "fox" , strength: 0.7 },
-	  { target: "mammal", source: "elk" , strength: 0.7 },
-	  { target: "insect", source: "ant" , strength: 0.7 },
-	  { target: "insect", source: "bee" , strength: 0.7 },
-	  { target: "fish"  , source: "carp", strength: 0.7 },
-	  { target: "fish"  , source: "pike", strength: 0.7 },
-	  { target: "cat"   , source: "elk" , strength: 0.1 },
-	  { target: "carp"  , source: "ant" , strength: 0.1 },
-	  { target: "elk"   , source: "bee" , strength: 0.1 },
-	  { target: "dog"   , source: "cat" , strength: 0.1 },
-	  { target: "fox"   , source: "ant" , strength: 0.1 },
-		{ target: "pike"  , source: "cat" , strength: 0.1 }
+  { id: "0", group: 0, label: "One", level: 1 },
+  { id: "1"   , group: 0, label: "Two"   , level: 1 },
+  { id: "2"   , group: 0, label: "Three"   , level: 1 },
+  { id: "3"   , group: 0, label: "Four"  , level: 1 },
+  { id: "4"   , group: 0, label: "Five"    , level: 1 },
+  { id: "5", group: 0, label: "Six", level: 1 },
+  { id: "6", group: 0, label: "Seven", level: 1 }
+] 
+
+ 	var baseLinks = [
+		{ target: "0", source: "1" , strength: 0.7 },
+		{ target: "0", source: "2" , strength: 0.7 },
+	  { target: "2", source: "3" , strength: 0.7 },
+	  { target: "2", source: "4" , strength: 0.7 },
+	  { target: "3", source: "5" , strength: 0.7 },
+	  { target: "0", source: "6" , strength: 0.7 }
 	]
- */
-var baseLinks = [];
+//var baseNodes = []; 
+//var baseLinks = [];
 var nodes = [...baseNodes]
 var links = [...baseLinks]
 //console.log(nodes);
@@ -103,11 +89,7 @@ function isNeighborLink(node, link) {
 
 
 function getNodeColor(node, neighbors) {
-  if (Array.isArray(neighbors) && neighbors.indexOf(node.id) > -1) {
-    return node.level === 1 ? 'blue' : 'green'
-  }
-
-  return node.level === 1 ? 'red' : 'gray'
+  return node.id === '1' ? 'green' : 'green'
 }
 
 
@@ -147,14 +129,15 @@ var linkForce = d3
 var simulation = d3
   .forceSimulation()
   .force('link', linkForce)
-  .force('charge', d3.forceManyBody().strength(-120))
+  .force('charge', d3.forceManyBody().strength(-800))
   .force('center', d3.forceCenter(width / 2, height / 2))
+  .velocityDecay(.9)
 
 var dragDrop = d3.drag().on('start', function (node) {
   node.fx = node.x
   node.fy = node.y
 }).on('drag', function (node) {
-  simulation.alphaTarget(0.7).restart()
+  simulation.alphaTarget(.7).restart()
   node.fx = d3.event.x
   node.fy = d3.event.y
 }).on('end', function (node) {
@@ -248,8 +231,8 @@ function updateGraph() {
   var nodeEnter = nodeElements
     .enter()
     .append('circle')
-    .attr('r', 10)
-    .attr('fill', function (node) { return node.level === 1 ? 'red' : 'gray' })
+    .attr('r', 20)
+    .attr('fill', function (node) { return node.id === "6" ? 'blue' : 'green' })
     .call(dragDrop)
     // we link the selectNode method here
     // to update the graph on every click
@@ -292,7 +275,7 @@ function updateSimulation() {
   })
 
   simulation.force('link').links(links)
-  simulation.alphaTarget(0.7).restart()
+  simulation.alphaTarget(0.9).restart()
 }
 
 // last but not least, we call updateSimulation

@@ -26,13 +26,28 @@
 package template.tool;
 
 import static spark.Spark.*;
+import com.google.gson.Gson;
+import com.google.gson.stream.JsonReader;
+
+import com.fasterxml.jackson.databind.*;
 import static spark.Filter.*;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -40,6 +55,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import javafx.application.Application;
 import processing.app.Base;
 import processing.app.tools.Tool;
@@ -53,12 +71,15 @@ public class VCFA implements Tool {
   private File sketchFolder;
   private File versionsCode;
   private File versionsImages;
+  private File versionsTree;
   private File sketchbookFolder;
   public Tree codeTree;
   public int currentVersion;
   public Editor editor;
   ScheduledExecutorService windowExecutor;
   VCFAUI ui;
+  private static Gson gson = new Gson();
+  ObjectMapper mapper = new ObjectMapper();
   
   public String getMenuTitle() {
     return "##tool.name##";
@@ -76,18 +97,17 @@ public class VCFA implements Tool {
 
 	if(setup == false) {
 		
-		// FOR TESTING ONLY
-		try {
-			FileUtils.deleteDirectory(new File(base.getActiveEditor().getSketch().getFolder()+"/"+"versions_code"));
-		}catch(IOException e) {
-			
-		}//FOR TESTING ONLY
+//		// FOR TESTING ONLY
+//		try {
+//			FileUtils.deleteDirectory(new File(base.getActiveEditor().getSketch().getFolder()+"/"+"versions_code"));
+//		}catch(IOException e) {}
+//		//FOR TESTING ONLY
 		
 		
 		
 		dataSetup();
 		networkSetup();
-		GUISetup();
+		//GUISetup();
 		Runnable updateLoop = new Runnable() {
 			  public void run() {
 				  update();
@@ -107,6 +127,7 @@ public class VCFA implements Tool {
   
     System.out.println("##tool.name## ##tool.prettyVersion## by ##author##");
   }
+  
   private void update() {
 	  //System.out.println("Updating...");
 	  
@@ -169,14 +190,37 @@ public class VCFA implements Tool {
 	  
 	  if(editor.getMode().getIdentifier() == "jm.mode.replmode.REPLMode") {
 	    	 System.out.println("Running in REPL Mode");
+	     }else {
+	    	 System.out.println("Please Run in REPL Mode!");
 	     }
 	  
-	  String rootFolder = makeVersion(0);
-	  Data root = new Data(rootFolder);
-	  codeTree = new Tree(root);
+	  versionsTree = new File(versionsCode.getAbsolutePath() + "/tree.json");
+	  System.out.println(versionsTree.getAbsoluteFile());
+	  System.out.println(versionsTree.getAbsolutePath());
+	  if(!versionsTree.exists()) {
+		  System.out.println("No Existing tree.json detected - creating a new verison history...");
+		  String rootFolder = makeVersion(0);
+		  Data root = new Data(rootFolder);
+		  codeTree = new Tree(root);
+		  fork(0);
+		  fork(1);
+		  fork(2);
+		  fork(2);
+		  writeJSONFromRoot(); 
+	  }else {
+		  System.out.println("Existing tree.json detected! Importing...");
+		  readJSONToRoot();
+		  System.out.println("Created New Version Tree");
+	  }
 	  
-	  currentVersion = 0;
 	  
+	  
+	 
+	  System.out.println(codeTree.toString());
+	 
+	 // codeTree.printAll();
+	  System.out.println("Forked!");
+	  System.out.println(codeTree.toString());
 	 
   }
   
@@ -190,7 +234,9 @@ public class VCFA implements Tool {
 			 child.data.path = makeVersion(child.id);
 			 changeActiveVersion(child.id);
 		 }
-		 
+		 writeJSONFromRoot();
+	 }else {
+		 System.out.println("Attempted Fork: Node Doesn't Exist");
 	 }
 	 
  }
@@ -207,7 +253,6 @@ public class VCFA implements Tool {
 	  }
  }
  
- 
   private String makeVersion(int id) {
 	  File folder = new File(versionsCode.getAbsolutePath() + "/_" + id);
 	  folder.mkdir();
@@ -222,7 +267,118 @@ public class VCFA implements Tool {
 	  }
 	  return folder.getAbsolutePath();
   }
-
+  
+  private void writeJSONFromRoot() {
+	  if(versionsTree.exists()) {
+		  versionsTree.delete();
+	  }
+	  try{
+		 versionsTree.createNewFile();
+	  } catch(IOException e) {
+		  System.out.println("Exception Occured: " + e.toString());
+	  }
+	  try {
+		 FileWriter fileWriter;
+		 fileWriter = new FileWriter(versionsTree.getAbsoluteFile(),true);
+		 BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+		 bufferedWriter.write(codeTree.getJSONSave());
+		 bufferedWriter.close();
+		 
+	  } catch(IOException e) {
+		  System.out.println("Error Saving JSON to File");
+	  }
+  }
+  
+  private void readJSONToRoot() {
+	byte[] encoded;
+	Tree importTree;
+	String input = null;
+	try {
+		encoded = Files.readAllBytes(Paths.get(versionsTree.getAbsolutePath()));
+	    input = new String(encoded,"UTF-8");
+		System.out.println("Read from file : " + input);
+	} catch (Exception e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
+	try {
+		System.out.println("Building Tree...");
+		JSONObject graph = new JSONObject(input);
+		JSONArray nodes = graph.getJSONArray("Nodes");
+		JSONArray edges = graph.getJSONArray("Edges");
+		for(int i = 0; i < nodes.length(); i++) {
+			System.out.println("Node Id : " + nodes.getJSONObject(i).getString("id"));
+		}
+		
+		int rootInd = JSONSearch(nodes, 0);
+		if(rootInd == -1) {
+			System.out.println("Couldn't Find Root Node on Import");
+		}
+		System.out.println("Initializing Tree...");
+		
+		System.out.println("Found root at  :" + nodes.getJSONObject(rootInd).getString("path"));
+		Data root = new Data(nodes.getJSONObject(rootInd).getString("path"));
+		System.out.println("Created Data Node " + root.path);
+		importTree = new Tree(root);
+		System.out.println("Initialized Tree at :" + importTree.root.data.path);
+		
+		for(int i = 0; i < nodes.length(); i++) {
+			System.out.println("Node Id : " + nodes.getJSONObject(i).getString("id"));
+		}
+		
+		
+		while(importTree.getList().size() < nodes.length() - 1) {
+			for(int i = 0; i < edges.length(); i++) {
+				int source =  Integer.parseInt(edges.getJSONObject(i).getString("source"));
+				int target =  Integer.parseInt(edges.getJSONObject(i).getString("target"));
+				if(importTree.idExists(source) && !importTree.idExists(target)) {
+					Node parent = importTree.getNode(source);
+					int childInd = JSONSearch(nodes, target);
+					Data data = new Data(nodes.getJSONObject(childInd).getString("path"));
+					Node child = parent.setChild(data,target);
+					System.out.println("created child : " + target + " from parent : "+ source);
+				}
+				System.out.println("Edge From : " + source + " to : " + target);
+				
+			}
+		}
+		
+		codeTree = importTree;
+	}catch(Exception e) {
+		System.out.println("Exception in Building Tree : "+ e.toString());
+	}
+	
+	
+	
+	
+	
+//	 if(codeTree.idExists(id)) {
+//		 Node parent = codeTree.getNode(id);
+//		 Data data = new Data("");
+//		 if(parent != null) {
+//			 Node child = parent.addChild(data);
+//			 child.data.path = makeVersion(child.id);
+//			 changeActiveVersion(child.id);
+//		 }
+//		 writeJSONFromRoot();
+//	 }else {
+//		 System.out.println("Attempted Fork: Node Doesn't Exist");
+//	 }
+  }
+  
+  int JSONSearch(JSONArray arr, int id) {
+	  try {
+		  for(int i = 0; i < arr.length(); i++) {
+				if(Integer.parseInt(arr.getJSONObject(i).getString("id")) == id) {
+					return i;
+				}
+			}
+	  }catch(Exception e) {
+		  
+	  }
+		  return -1;
+		
+  }
   
   private static void copyFile(File src, File dest){
 	  try {
@@ -231,12 +387,5 @@ public class VCFA implements Tool {
 		// TODO Auto-generated catch block
 		e.printStackTrace();
 	}
-  }
-  public class JsonMaker {
-	    public String getJson() {
-	        return "{ \"hello\" : \"world\"}";
-	    }
-	}
- 
-  
+  }  
 }

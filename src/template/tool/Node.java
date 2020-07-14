@@ -1,5 +1,6 @@
 package template.tool;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -16,6 +17,9 @@ public class Node {
 	
 	public Node(Data d,Tree t, Node p) {
 		tree = t;
+		while(tree.idExists(tree.curId)) {
+			tree.curId++;
+		}
 		id = tree.curId;
 		tree.curId++;
 		
@@ -24,12 +28,34 @@ public class Node {
 		if(id != 0) {
 			parent = p;
 		}
+		
+		children = new ArrayList<>();
+		allChildren = new ArrayList<>();
 	}
 	
+	public Node(Data d,Tree t, Node p, int idSet) {
+		tree = t;
+		id = idSet;
+		
+		data = d;
+		
+		if(id != 0) {
+			parent = p;
+		}
+		
+		children = new ArrayList<>();
+		allChildren = new ArrayList<>();
+	}
 	
 	
 	public Node addChild(Data d) {
 		Node child = new Node(d,tree,this);
+		children.add(child);
+		indexAdd(child);
+		return child;
+	}
+	public Node setChild(Data d, int id) {
+		Node child = new Node(d,tree,this, id);
 		children.add(child);
 		indexAdd(child);
 		return child;

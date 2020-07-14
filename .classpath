@@ -39,5 +39,12 @@
 	<classpathentry kind="lib" path="lib/servlet-api-3.0-alpha-1-javadoc.jar"/>
 	<classpathentry kind="lib" path="lib/servlet-api-3.0-alpha-1-sources.jar"/>
 	<classpathentry kind="lib" path="lib/servlet-api-3.0-alpha-1.jar"/>
+	<classpathentry kind="lib" path="/Users/erawn/Downloads/gson-2.8.6.jar"/>
+	<classpathentry kind="lib" path="/Users/erawn/Downloads/jackson-core-2.11.1.jar"/>
+	<classpathentry kind="lib" path="/Users/erawn/Downloads/jackson-databind-2.11.1.jar"/>
+	<classpathentry kind="lib" path="/Users/erawn/Downloads/jackson-annotations-2.11.1.jar"/>
+	<classpathentry kind="lib" path="lib/jackson-annotations-2.11.1.jar"/>
+	<classpathentry kind="lib" path="lib/jackson-core-2.11.1.jar"/>
+	<classpathentry kind="lib" path="lib/jackson-databind-2.11.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
