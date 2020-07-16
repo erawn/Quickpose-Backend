@@ -256,6 +256,8 @@ public class VCFA implements Tool {
 	 //base.getActiveEditor().handleSave(false);
 
 	 for(Editor e : base.getEditors()) {
+		 
+		 e.getSketch().reload();
 		 e.handleSave(true);
 	 }
  }
