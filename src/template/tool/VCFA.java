@@ -117,6 +117,7 @@ public class VCFA implements Tool {
 		  executor.scheduleAtFixedRate(updateLoop, 0, 1, TimeUnit.SECONDS);
 		setup = true;
 	}else {
+		
 	}
 	 
      //System.out.println("Sketch Folder at : " + sketchFolder.getAbsolutePath());
@@ -129,7 +130,7 @@ public class VCFA implements Tool {
   }
   
   private void update() {
-	  //System.out.println("Updating...");
+	 saveCurrent();
 	  
   }
 
@@ -168,16 +169,17 @@ public class VCFA implements Tool {
 		before((request, response) -> response.header("Access-Control-Allow-Origin", "*"));
 	  get("/versions.json", (request, response) -> {
 		  response.type("application/json");
-		  return codeTree.getJSONTest();
+		  return codeTree.getJSON();
 	  });
 	  get("/fork/:name", (request, response) -> {
 		  System.out.println("Fork on :"+ request.params(":name"));
-		  //fork(Integer.parseInt(request.params(":name")));
+		  fork(Integer.parseInt(request.params(":name")));
 		  return "Success";
 	  });
 	  get("/select/:name", (request, response) -> {
 		  System.out.println("Select Node :"+ request.params(":name"));
-		  //changeActiveVersion(Integer.parseInt(request.params(":name")));
+		  currentVersion = Integer.parseInt(request.params(":name"));
+		  changeActiveVersion(currentVersion);
 		  return "Success";
 	  });
   }
@@ -202,26 +204,12 @@ public class VCFA implements Tool {
 		  String rootFolder = makeVersion(0);
 		  Data root = new Data(rootFolder);
 		  codeTree = new Tree(root);
-		  fork(0);
-		  fork(1);
-		  fork(2);
-		  fork(2);
 		  writeJSONFromRoot(); 
 	  }else {
 		  System.out.println("Existing tree.json detected! Importing...");
 		  readJSONToRoot();
 		  System.out.println("Created New Version Tree");
-	  }
-	  
-	  
-	  
-	 
-	  System.out.println(codeTree.toString());
-	 
-	 // codeTree.printAll();
-	  System.out.println("Forked!");
-	  System.out.println(codeTree.toString());
-	 
+	  }	 
   }
   
   
@@ -240,6 +228,20 @@ public class VCFA implements Tool {
 	 }
 	 
  }
+ 
+ private void saveCurrent() {
+	 makeVersion(currentVersion);
+//	 File folder = new File(versionsCode.getAbsolutePath() + "/_" + currentVersion);
+//	  File[] dirListing = sketchFolder.listFiles();
+//	  if(dirListing != null) {
+//		  for(File f : dirListing) {
+//			  if(FilenameUtils.isExtension(f.getName(), "pde")) {
+//				  File newFile = new File(folder.getAbsolutePath()+"/"+f.getName());
+//				  copyFile(f,newFile);
+//			  }
+//		  }
+//	  }
+ }
  private void changeActiveVersion(int id) {
 	 File versionFolder = new File(codeTree.getNode(id).data.path);
 	 File[] versionListing = versionFolder.listFiles();
@@ -251,6 +253,11 @@ public class VCFA implements Tool {
 			  }
 		  }
 	  }
+	 //base.getActiveEditor().handleSave(false);
+
+	 for(Editor e : base.getEditors()) {
+		 e.handleSave(true);
+	 }
  }
  
   private String makeVersion(int id) {

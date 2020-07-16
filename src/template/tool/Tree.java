@@ -78,7 +78,7 @@ public class Tree {
 				 JSONObject edge = new JSONObject();
 				 edge.put("target", Integer.toString(c.id));
 				 edge.put("source", Integer.toString(root.id));
-				 edge.put("strength", 0.1);
+				 edge.put("strength", 0.9);
 				 Edges.put(edge);
 			}
 			
@@ -95,7 +95,7 @@ public class Tree {
 					 JSONObject edge = new JSONObject();
 					 edge.put("target", Integer.toString(c.id));
 					 edge.put("source", Integer.toString(n.id));
-					 edge.put("strength", 0.1);
+					 edge.put("strength", 0.9);
 					 Edges.put(edge);
 				}
 				

@@ -42,7 +42,7 @@ const requestData = async (url) => {
 
 
 //D3 --------------------------
-var baseNodes = [
+/*var baseNodes = [
   { id: "0", group: 0, label: "One", level: 1 },
   { id: "1"   , group: 0, label: "Two"   , level: 1 },
   { id: "2"   , group: 0, label: "Three"   , level: 1 },
@@ -59,9 +59,19 @@ var baseNodes = [
 	  { target: "2", source: "4" , strength: 0.7 },
 	  { target: "3", source: "5" , strength: 0.7 },
 	  { target: "0", source: "6" , strength: 0.7 }
-	]
-//var baseNodes = []; 
-//var baseLinks = [];
+	]*/
+/*var baseNodes = [
+	  { id: "0", group: 0, label: "One", level: 1 },
+	  { id: "1"   , group: 0, label: "Two"   , level: 1 },
+
+	] 
+
+	 	var baseLinks = [
+			{ target: "0", source: "1" , strength: 0.7 },
+
+		]*/
+var baseNodes = []; 
+var baseLinks = [];
 var nodes = [...baseNodes]
 var links = [...baseLinks]
 //console.log(nodes);
@@ -89,12 +99,12 @@ function isNeighborLink(node, link) {
 
 
 function getNodeColor(node, neighbors) {
-  return node.id === '1' ? 'green' : 'green'
+  return node.id === selectedId ? 'blue' : 'green'
 }
 
 
 function getLinkColor(node, link) {
-  return isNeighborLink(node, link) ? 'green' : '#E5E5E5'
+  return isNeighborLink(node, link) ? '#E5E5E5' : '#E5E5E5'
 }
 
 function getTextColor(node, neighbors) {
@@ -110,6 +120,8 @@ svg.attr('width', width).attr('height', height)
 var linkElements,
   nodeElements,
   textElements
+  
+
 
 // we use svg groups to logically group the elements together
 var linkGroup = svg.append('g').attr('class', 'links')
@@ -118,7 +130,7 @@ var textGroup = svg.append('g').attr('class', 'texts')
 
 // we use this reference to select/deselect
 // after clicking the same element twice
-var selectedId
+var selectedId = undefined;
 
 // simulation setup with all forces
 var linkForce = d3
@@ -164,26 +176,27 @@ function selectNode(selectedNode) {
     updateSimulation()
   }
   //selectedNode.attr('fill', function (node) {return 'blue'})
- /*  var neighbors = getNeighbors(selectedNode)
+  
+  var neighbors = getNeighbors(selectedNode)
   
   // we modify the styles to highlight selected nodes
   nodeElements.attr('fill', function (node) { return getNodeColor(node, neighbors) })
   textElements.attr('fill', function (node) { return getTextColor(node, neighbors) })
-  linkElements.attr('stroke', function (link) { return getLinkColor(selectedNode, link) }) */
+  linkElements.attr('stroke', function (link) { return getLinkColor(selectedNode, link) })
 }
 
 // this helper simple adds all nodes and links
 // that are missing, to recreate the initial state
 function resetData() {
+  //linkGroup = svg.append('g').attr('class', 'links');
+  //nodeGroup = svg.append('g').attr('class', 'nodes')
+  //textGroup = svg.append('g').attr('class', 'texts')
   var nodeIds = nodes.map(function (node) { return node.id })
-
   baseNodes.forEach(function (node) {
     if (nodeIds.indexOf(node.id) === -1) {
       nodes.push(node)
     }
   })
-
-  links = baseLinks
 }
 
 // diffing and mutating the data
@@ -232,7 +245,8 @@ function updateGraph() {
     .enter()
     .append('circle')
     .attr('r', 20)
-    .attr('fill', function (node) { return node.id === "6" ? 'blue' : 'green' })
+    .attr('fill', function (node) {
+    	return node.id === selectedId ? 'blue' : 'green' })
     .call(dragDrop)
     // we link the selectNode method here
     // to update the graph on every click
@@ -284,22 +298,97 @@ function updateSimulation() {
 function update(){
 	requestData(request);
 	//sendFork(request,count);
+	console.log(selectedId)
 	
-	//console.log(data[0]);
-	//console.log(data[1]);
 	
-	//console.log(nodes);
-	//console.log(links);
+	/*console.log(selectedId);
+	console.log(data);
+	console.log(nodes);
+	console.log(links);*/ 
 	if(data != null){
-		baseNodes.push(...data[0]);
-		baseLinks.push(...data[1]);
+		var changed = false;
+		var newIndicies = [];
+		var oldIndicies = [];
+		/* console.log(data) */
+		for (i = 0; i < data[0].length; i++){
+			newIndicies.push(data[0][i].id);
+		}
+		for (i = 0; i < nodes.length; i++){
+			oldIndicies.push(nodes[i].id);
+			if(!newIndicies.includes(nodes[i].id)){
+				nodes.splice(i,1);
+				
+				changed = true;
+			}
+		}
+		
+		for (i = 0; i < data[0].length; i++){
+			if(!oldIndicies.includes(data[0][i].id)){
+				baseNodes.push(data[0][i]);
+				changed = true;
+			}
+		}
+		//baseNodes = data[0];
+		//nodes = baseNodes;
+		newIndicies = [];
+		for (i = 0; i < baseNodes.length; i++){
+			newIndicies.push(baseNodes[i].id);
+		}
+		
+		/* console.log(newIndicies);
+		console.log(...data[1]) */
+		baseLinks = data[1];
+		/* console.log(baseLinks)
+		console.log(data[1].length) */
+		for(i = 0; i < data[1].length; i++){
+			
+			var source = data[1][i].source;
+			var target = data[1][i].target;
+			/* console.log(source)
+			console.log(target) */
+			
+			var sourceInd = newIndicies.indexOf(source);
+			var targetInd = newIndicies.indexOf(target);
+			
+			//console.log(sourceInd)
+			/* console.log(targetInd) */
+			
+			if(sourceInd == -1){
+				sourceInd = 0;
+			}
+			if(targetInd == -1){
+				targetInd = 0;
+			}
+			baseLinks[i].source = baseNodes[sourceInd];
+			baseLinks[i].target = baseNodes[targetInd];
+		}
+		
+		//console.log(baseLinks)
+		links = baseLinks;
+		
 		resetData();
-		document.getElementById("testText").innerHTML = "Complete";
+		
+		//console.log(nodes)
+		//console.log(links)
+		/*console.log(data[0].length)
+		
+		//baseNodes.push(...data[0]);
+		//baseLinks.push(...data[1]);
+		baseNodes = []
+		baseLinks = []
+		baseNodes.push(...[data[0]][0]);
+		baseLinks.push(data[1][1]);
+		
+		
+		console.log(baseNodes);
+		console.log(baseLinks);
+		resetData();
+		document.getElementById("testText").innerHTML = "Complete"; */
 	}
 	
 	count++;
 	updateSimulation();
-	setTimeout(update,1000);
+	setTimeout(update,100);
 }
 
 update();
