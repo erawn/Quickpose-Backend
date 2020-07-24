@@ -109,7 +109,7 @@ public class Tree {
 		}
 		return "";
     }
-	public String getJSONSave(){
+	public String getJSONSave(int currentNodeId){
 		try {
 			JSONObject Graph = new JSONObject();
 			JSONArray Nodes = new JSONArray();
@@ -146,6 +146,7 @@ public class Tree {
 			}
 			Graph.put("Nodes", Nodes);
 			Graph.put("Edges", Edges);
+			Graph.put("CurrentNode", currentNodeId);
 			
 	        return Graph.toString();
 		} catch (Exception e) {

@@ -60,6 +60,8 @@ import org.json.JSONObject;
 
 import javafx.application.Application;
 import processing.app.Base;
+import processing.app.Sketch;
+import processing.app.SketchCode;
 import processing.app.tools.Tool;
 import processing.app.ui.Editor;
 
@@ -172,15 +174,19 @@ public class VCFA implements Tool {
 		  return codeTree.getJSON();
 	  });
 	  get("/fork/:name", (request, response) -> {
-		  System.out.println("Fork on :"+ request.params(":name"));
+		  //System.out.println("Fork on :"+ request.params(":name"));
 		  fork(Integer.parseInt(request.params(":name")));
 		  return "Success";
 	  });
 	  get("/select/:name", (request, response) -> {
-		  System.out.println("Select Node :"+ request.params(":name"));
+		  //System.out.println("Select Node :"+ request.params(":name"));
 		  currentVersion = Integer.parseInt(request.params(":name"));
 		  changeActiveVersion(currentVersion);
 		  return "Success";
+	  });
+	  get("/currentVersion", (request, response) -> {
+		  //System.out.println("Current ID Request :" + currentVersion);
+		  return currentVersion;
 	  });
   }
   private void dataSetup(){
@@ -213,7 +219,7 @@ public class VCFA implements Tool {
   }
   
   
- private void fork(int id) {
+ private int fork(int id) {
 	 if(codeTree.idExists(id)) {
 		 Node parent = codeTree.getNode(id);
 		 Data data = new Data("");
@@ -221,28 +227,43 @@ public class VCFA implements Tool {
 			 Node child = parent.addChild(data);
 			 child.data.path = makeVersion(child.id);
 			 changeActiveVersion(child.id);
+			 writeJSONFromRoot();
+			 return child.id;
 		 }
-		 writeJSONFromRoot();
+		
+		 
 	 }else {
 		 System.out.println("Attempted Fork: Node Doesn't Exist");
 	 }
+	 
+	 return -1;
 	 
  }
  
  private void saveCurrent() {
 	 makeVersion(currentVersion);
-//	 File folder = new File(versionsCode.getAbsolutePath() + "/_" + currentVersion);
-//	  File[] dirListing = sketchFolder.listFiles();
-//	  if(dirListing != null) {
-//		  for(File f : dirListing) {
-//			  if(FilenameUtils.isExtension(f.getName(), "pde")) {
-//				  File newFile = new File(folder.getAbsolutePath()+"/"+f.getName());
-//				  copyFile(f,newFile);
-//			  }
-//		  }
-//	  }
+//	 if(base.getActiveEditor().getSketch().isModified()) {
+//		 if(codeTree.getNode(currentVersion).children.isEmpty()) {
+//			 makeVersion(currentVersion);
+//		 }else {
+//			 Sketch currentSketch = base.getActiveEditor().getSketch();
+//			 base.getActiveEditor().handleSave(true);
+////			 int selectionStart = currentSketch.getCurrentCode().getSelectionStart();
+////			 int selectionStop = currentSketch.getCurrentCode().getSelectionStop();
+////			 int scrollPosition = currentSketch.getCurrentCode().getScrollPosition();
+////			 String program = currentSketch.getCurrentCode().getProgram();
+//			 fork(currentVersion);
+//			 //System.out.println("forking new version from old node");
+//		 }
+//	 }
  }
  private void changeActiveVersion(int id) {
+	 
+	 if(!codeTree.idExists(id)) {
+		 System.out.println("Attempted to change active version to invalid Id");
+		 return;
+	 }
+	 
 	 File versionFolder = new File(codeTree.getNode(id).data.path);
 	 File[] versionListing = versionFolder.listFiles();
 	 if(versionListing != null) {
@@ -253,16 +274,15 @@ public class VCFA implements Tool {
 			  }
 		  }
 	  }
-	 //base.getActiveEditor().handleSave(false);
-
-	 for(Editor e : base.getEditors()) {
-		 
-		 e.getSketch().reload();
-		 e.handleSave(true);
-	 }
+	 base.getActiveEditor().getSketch().reload();
+	 base.getActiveEditor().handleSave(true);
+	 currentVersion = id;
+	// System.out.println("Switched version to "+ id );
  }
  
   private String makeVersion(int id) {
+	  //base.getActiveEditor().getSketch().reload();
+	  //base.getActiveEditor().handleSave(true);
 	  File folder = new File(versionsCode.getAbsolutePath() + "/_" + id);
 	  folder.mkdir();
 	  File[] dirListing = sketchFolder.listFiles();
@@ -290,7 +310,7 @@ public class VCFA implements Tool {
 		 FileWriter fileWriter;
 		 fileWriter = new FileWriter(versionsTree.getAbsoluteFile(),true);
 		 BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-		 bufferedWriter.write(codeTree.getJSONSave());
+		 bufferedWriter.write(codeTree.getJSONSave(currentVersion));
 		 bufferedWriter.close();
 		 
 	  } catch(IOException e) {
@@ -305,34 +325,36 @@ public class VCFA implements Tool {
 	try {
 		encoded = Files.readAllBytes(Paths.get(versionsTree.getAbsolutePath()));
 	    input = new String(encoded,"UTF-8");
-		System.out.println("Read from file : " + input);
+		//System.out.println("Read from file : " + input);
 	} catch (Exception e) {
 		// TODO Auto-generated catch block
 		e.printStackTrace();
 	}
 	try {
-		System.out.println("Building Tree...");
+		//System.out.println("Building Tree...");
 		JSONObject graph = new JSONObject(input);
 		JSONArray nodes = graph.getJSONArray("Nodes");
 		JSONArray edges = graph.getJSONArray("Edges");
+		
+		
 		for(int i = 0; i < nodes.length(); i++) {
-			System.out.println("Node Id : " + nodes.getJSONObject(i).getString("id"));
+			//System.out.println("Node Id : " + nodes.getJSONObject(i).getString("id"));
 		}
 		
 		int rootInd = JSONSearch(nodes, 0);
 		if(rootInd == -1) {
 			System.out.println("Couldn't Find Root Node on Import");
 		}
-		System.out.println("Initializing Tree...");
+		//System.out.println("Initializing Tree...");
 		
-		System.out.println("Found root at  :" + nodes.getJSONObject(rootInd).getString("path"));
+		//System.out.println("Found root at  :" + nodes.getJSONObject(rootInd).getString("path"));
 		Data root = new Data(nodes.getJSONObject(rootInd).getString("path"));
-		System.out.println("Created Data Node " + root.path);
+		//System.out.println("Created Data Node " + root.path);
 		importTree = new Tree(root);
-		System.out.println("Initialized Tree at :" + importTree.root.data.path);
+		//System.out.println("Initialized Tree at :" + importTree.root.data.path);
 		
 		for(int i = 0; i < nodes.length(); i++) {
-			System.out.println("Node Id : " + nodes.getJSONObject(i).getString("id"));
+			//System.out.println("Node Id : " + nodes.getJSONObject(i).getString("id"));
 		}
 		
 		
@@ -345,14 +367,16 @@ public class VCFA implements Tool {
 					int childInd = JSONSearch(nodes, target);
 					Data data = new Data(nodes.getJSONObject(childInd).getString("path"));
 					Node child = parent.setChild(data,target);
-					System.out.println("created child : " + target + " from parent : "+ source);
+					//System.out.println("created child : " + target + " from parent : "+ source);
 				}
-				System.out.println("Edge From : " + source + " to : " + target);
+				//System.out.println("Edge From : " + source + " to : " + target);
 				
 			}
 		}
 		
 		codeTree = importTree;
+		changeActiveVersion(graph.getInt("CurrentNode"));
+		
 	}catch(Exception e) {
 		System.out.println("Exception in Building Tree : "+ e.toString());
 	}

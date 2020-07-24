@@ -36,10 +36,8 @@ const requestData = async (url) => {
 	const response = await fetch(url+'/versions.json');
 	const json = await response.json();
 	data = json;
-	
-	
 }
-
+var selectedId = -1;
 
 //D3 --------------------------
 /*var baseNodes = [
@@ -78,7 +76,17 @@ var links = [...baseLinks]
 //console.log(links);
 
 
+const requestCurrentId = async (url) => {
+	const response = await fetch(url+'/currentVersion');
+	const id = await response.json();
 
+ 	if(selectedId != id){
+ 		var nodeIds = nodes.map(function (node) { return node.id })
+		 selectNode(nodes[nodeIds.indexOf(id.toString())]);
+		selectedId = id;
+	} 
+
+}
 
 function getNeighbors(node) {
   return baseLinks.reduce(function (neighbors, link) {
@@ -130,7 +138,7 @@ var textGroup = svg.append('g').attr('class', 'texts')
 
 // we use this reference to select/deselect
 // after clicking the same element twice
-var selectedId = undefined;
+
 
 // simulation setup with all forces
 var linkForce = d3
@@ -184,6 +192,7 @@ function selectNode(selectedNode) {
   textElements.attr('fill', function (node) { return getTextColor(node, neighbors) })
   linkElements.attr('stroke', function (link) { return getLinkColor(selectedNode, link) })
 }
+
 
 // this helper simple adds all nodes and links
 // that are missing, to recreate the initial state
@@ -297,8 +306,9 @@ function updateSimulation() {
 
 function update(){
 	requestData(request);
+	
 	//sendFork(request,count);
-	console.log(selectedId)
+	//console.log(selectedId)
 	
 	
 	/*console.log(selectedId);
@@ -306,6 +316,7 @@ function update(){
 	console.log(nodes);
 	console.log(links);*/ 
 	if(data != null){
+		requestCurrentId(request);
 		var changed = false;
 		var newIndicies = [];
 		var oldIndicies = [];
@@ -389,9 +400,11 @@ function update(){
 	count++;
 	updateSimulation();
 	setTimeout(update,100);
+	
 }
 
 update();
+
 
   </script>
 </body>
