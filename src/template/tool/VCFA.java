@@ -241,22 +241,15 @@ public class VCFA implements Tool {
  }
  
  private void saveCurrent() {
-	 makeVersion(currentVersion);
-//	 if(base.getActiveEditor().getSketch().isModified()) {
-//		 if(codeTree.getNode(currentVersion).children.isEmpty()) {
-//			 makeVersion(currentVersion);
-//		 }else {
-//			 Sketch currentSketch = base.getActiveEditor().getSketch();
-//			 base.getActiveEditor().handleSave(true);
-////			 int selectionStart = currentSketch.getCurrentCode().getSelectionStart();
-////			 int selectionStop = currentSketch.getCurrentCode().getSelectionStop();
-////			 int scrollPosition = currentSketch.getCurrentCode().getScrollPosition();
-////			 String program = currentSketch.getCurrentCode().getProgram();
-//			 fork(currentVersion);
-//			 //System.out.println("forking new version from old node");
-//		 }
-//	 }
+	 if(codeTree.getNode(currentVersion).children.size() == 0) {
+		 makeVersion(currentVersion);
+	 }else if(base.getActiveEditor().getSketch().isModified()){
+		 Sketch currentSketch = base.getActiveEditor().getSketch();
+		 base.getActiveEditor().handleSave(true);
+		 fork(currentVersion);
+	 }
  }
+ 
  private void changeActiveVersion(int id) {
 	 
 	 if(!codeTree.idExists(id)) {
