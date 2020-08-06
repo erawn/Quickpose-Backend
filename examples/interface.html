@@ -122,8 +122,12 @@ function getTextColor(node, neighbors) {
 var width = window.innerWidth
 var height = window.innerHeight
 
+var canvasWidth = width*10
+var canvasHeight = height*10
+var radius = 20
+
 var svg = d3.select('svg')
-svg.attr('width', width).attr('height', height)
+svg.attr('width', canvasWidth).attr('height', canvasHeight)
 
 var linkElements,
   nodeElements,
@@ -149,20 +153,23 @@ var linkForce = d3
 var simulation = d3
   .forceSimulation()
   .force('link', linkForce)
-  .force('charge', d3.forceManyBody().strength(-800))
+  .force('charge', d3.forceManyBody().strength(-100))
   .force('center', d3.forceCenter(width / 2, height / 2))
-  .velocityDecay(.9)
+  .force('collision', d3.forceCollide().radius(20))
+  .velocityDecay(.99)
+  .alphaTarget(.01);
+  
 
 var dragDrop = d3.drag().on('start', function (node) {
   node.fx = node.x
   node.fy = node.y
 }).on('drag', function (node) {
-  simulation.alphaTarget(.7).restart()
+  //simulation.alphaTarget(.9).restart()
   node.fx = d3.event.x
   node.fy = d3.event.y
 }).on('end', function (node) {
   if (!d3.event.active) {
-    simulation.alphaTarget(0)
+    //simulation.alphaTarget(.99)
   }
   node.fx = null
   node.fy = null
@@ -285,8 +292,8 @@ function updateSimulation() {
 
   simulation.nodes(nodes).on('tick', () => {
     nodeElements
-      .attr('cx', function (node) { return node.x })
-      .attr('cy', function (node) { return node.y })
+      .attr('cx', function (node) { return node.x = Math.max(radius, Math.min(canvasWidth - radius, node.x)); })
+      .attr('cy', function (node) { return node.y = Math.max(radius, Math.min(canvasHeight - radius, node.y)); })
     textElements
       .attr('x', function (node) { return node.x })
       .attr('y', function (node) { return node.y })
@@ -297,8 +304,8 @@ function updateSimulation() {
       .attr('y2', function (link) { return link.target.y })
   })
 
-  simulation.force('link').links(links)
-  simulation.alphaTarget(0.9).restart()
+  //simulation.force('link').links(links)
+  //simulation.alphaTarget(0.9).restart()
 }
 
 // last but not least, we call updateSimulation
@@ -311,16 +318,16 @@ function update(){
 	//console.log(selectedId)
 	
 	
-	/*console.log(selectedId);
-	console.log(data);
-	console.log(nodes);
-	console.log(links);*/ 
+	//console.log(selectedId);
+	//console.log(data);
+	//console.log(nodes);
+	//console.log(links);
 	if(data != null){
 		requestCurrentId(request);
 		var changed = false;
 		var newIndicies = [];
 		var oldIndicies = [];
-		/* console.log(data) */
+		console.log(data) 
 		for (i = 0; i < data[0].length; i++){
 			newIndicies.push(data[0][i].id);
 		}
@@ -346,23 +353,23 @@ function update(){
 			newIndicies.push(baseNodes[i].id);
 		}
 		
-		/* console.log(newIndicies);
-		console.log(...data[1]) */
+	    //console.log(newIndicies);
+		//console.log(...data[1])
 		baseLinks = data[1];
-		/* console.log(baseLinks)
-		console.log(data[1].length) */
+		// console.log(baseLinks)
+		//console.log(data[1].length) 
 		for(i = 0; i < data[1].length; i++){
 			
 			var source = data[1][i].source;
 			var target = data[1][i].target;
-			/* console.log(source)
-			console.log(target) */
+			// console.log(source)
+			//console.log(target) 
 			
 			var sourceInd = newIndicies.indexOf(source);
 			var targetInd = newIndicies.indexOf(target);
 			
 			//console.log(sourceInd)
-			/* console.log(targetInd) */
+			// console.log(targetInd) 
 			
 			if(sourceInd == -1){
 				sourceInd = 0;
@@ -375,26 +382,27 @@ function update(){
 		}
 		
 		//console.log(baseLinks)
+		
 		links = baseLinks;
 		
 		resetData();
 		
 		//console.log(nodes)
 		//console.log(links)
-		/*console.log(data[0].length)
+		//console.log(data[0].length)
 		
 		//baseNodes.push(...data[0]);
 		//baseLinks.push(...data[1]);
-		baseNodes = []
-		baseLinks = []
-		baseNodes.push(...[data[0]][0]);
-		baseLinks.push(data[1][1]);
+		//baseNodes = []
+		//baseLinks = []
+		//baseNodes.push(...[data[0]][0]);
+		//baseLinks.push(data[1][1]);
 		
 		
-		console.log(baseNodes);
-		console.log(baseLinks);
-		resetData();
-		document.getElementById("testText").innerHTML = "Complete"; */
+		//console.log(baseNodes);
+		//console.log(baseLinks);
+		//resetData();
+		document.getElementById("testText").innerHTML = "Complete";
 	}
 	
 	count++;
@@ -402,10 +410,10 @@ function update(){
 	setTimeout(update,100);
 	
 }
-
+simulation.alphaDecay(.9);
 update();
 
-
+ 
   </script>
 </body>
 
