@@ -80,6 +80,7 @@ public class VCFA implements Tool {
   public Editor editor;
   ScheduledExecutorService windowExecutor;
   VCFAUI ui;
+  JSONObject nodePositions;
   private static Gson gson = new Gson();
   ObjectMapper mapper = new ObjectMapper();
   
@@ -188,6 +189,12 @@ public class VCFA implements Tool {
 		  //System.out.println("Current ID Request :" + currentVersion);
 		  return currentVersion;
 	  });
+	  post("/positions.json", (request, response) -> {
+		  response.type("application/json");
+		  updatePositions(request.body());
+		  return "Success";
+	  });
+	  
   }
   private void dataSetup(){
 	  editor = base.getActiveEditor();
@@ -250,6 +257,7 @@ public class VCFA implements Tool {
 	 }
  }
  
+
  private void changeActiveVersion(int id) {
 	 
 	 if(!codeTree.idExists(id)) {
@@ -285,10 +293,19 @@ public class VCFA implements Tool {
 				  File newFile = new File(folder.getAbsolutePath()+"/"+f.getName());
 				  copyFile(f,newFile);
 			  }
+			  if(f.getName() == "render.png") {
+				  File newFile = new File(folder.getAbsolutePath()+"/"+f.getName());
+				  copyFile(f,newFile);
+			  }
 		  }
 	  }
 	  return folder.getAbsolutePath();
   }
+  private void updatePositions(String input) {
+	  nodePositions = new JSONObject(input);
+	  System.out.println(input);
+  }
+  
   
   private void writeJSONFromRoot() {
 	  if(versionsTree.exists()) {

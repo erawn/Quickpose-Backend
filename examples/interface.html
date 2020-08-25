@@ -30,6 +30,16 @@ const sendSelect = async (url, id) => {
 	const response = await fetch(url + '/select/' + id);
 }
 
+const updatePositionData = async (url, positions) => {
+	const response = await fetch(url + '/positions.json', {
+		method: "POST",
+		body: JSON.stringify(positions)
+	}).then(res => {
+		console.log("POST sent, response: ", res);
+	});
+
+}
+
 var data = null;
 var count = 0;
 const requestData = async (url) => {
@@ -146,17 +156,17 @@ var textGroup = svg.append('g').attr('class', 'texts')
 
 // simulation setup with all forces
 var linkForce = d3
-  .forceLink()
-  .id(function (link) { return link.id })
-  .strength(function (link) { return link.strength })
+	.forceLink()
+	.id(link => link.id)
+	.strength(link => link.strength)
 
 var simulation = d3
   .forceSimulation()
   .force('link', linkForce)
-  .force('charge', d3.forceManyBody().strength(-100))
-  .force('center', d3.forceCenter(width / 2, height / 2))
-  .force('collision', d3.forceCollide().radius(20))
-  .velocityDecay(.99)
+  //.force('charge', d3.forceManyBody().strength(-100))
+  //.force('center', d3.forceCenter(width / 2, height / 2))
+  .force('collision', d3.forceCollide().radius(60))
+  .velocityDecay(.90)
   .alphaTarget(.01);
   
 
@@ -304,7 +314,7 @@ function updateSimulation() {
       .attr('y2', function (link) { return link.target.y })
   })
 
-  //simulation.force('link').links(links)
+  simulation.force('link').links(links)
   //simulation.alphaTarget(0.9).restart()
 }
 
@@ -314,6 +324,20 @@ function updateSimulation() {
 function update(){
 	requestData(request);
 	
+	var positions = {};
+	var pos = [];
+	positions.pos = pos;
+	
+	for (i = 0; i < nodes.length; i++){
+		var n = nodes[i];
+		var node = {
+			"id": n.id,
+			"x": n.x,
+			"y": n.y
+		}
+		positions.pos.push(node);
+	}
+	updatePositionData(request,JSON.stringify(positions));
 	//sendFork(request,count);
 	//console.log(selectedId)
 	
@@ -327,7 +351,7 @@ function update(){
 		var changed = false;
 		var newIndicies = [];
 		var oldIndicies = [];
-		console.log(data) 
+		//console.log(data) 
 		for (i = 0; i < data[0].length; i++){
 			newIndicies.push(data[0][i].id);
 		}
@@ -410,7 +434,6 @@ function update(){
 	setTimeout(update,100);
 	
 }
-simulation.alphaDecay(.9);
 update();
 
  
