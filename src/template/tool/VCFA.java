@@ -56,6 +56,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import javafx.application.Application;
@@ -214,12 +215,27 @@ public class VCFA implements Tool {
 	  System.out.println(versionsTree.getAbsolutePath());
 	  if(!versionsTree.exists()) {
 		  System.out.println("No Existing tree.json detected - creating a new verison history...");
+		  
+		  if(editor.getText() == "") {
+			  editor.setText("void setup(){  \n" + 
+				  		"  size(600,600); \n" + 
+				  		"\n" + 
+				  		"}\n" + 
+				  		"\n" + 
+				  		"void draw(){ \n" + 
+				  		"             \n" + 
+				  		"\n" + 
+				  		"  \n" + 
+				  		"  \n" + 
+				  		"  save(\"render.png\");\n" + 
+				  		"}");
+		  }
 		  String rootFolder = makeVersion(0);
 		  Data root = new Data(rootFolder);
 		  codeTree = new Tree(root);
 		  writeJSONFromRoot(); 
 	  }else {
-		  System.out.println("Existing tree.json detected! Importing...");
+		  System.out.println("Existing tree.json detected! Reading...");
 		  readJSONToRoot();
 		  System.out.println("Created New Version Tree");
 	  }	 
@@ -302,7 +318,11 @@ public class VCFA implements Tool {
 	  return folder.getAbsolutePath();
   }
   private void updatePositions(String input) {
-	  nodePositions = new JSONObject(input);
+	  try{
+		  nodePositions = new JSONObject(input);
+	  }catch(JSONException e) {
+		  
+	  }
 	  System.out.println(input);
   }
   
@@ -335,13 +355,10 @@ public class VCFA implements Tool {
 	try {
 		encoded = Files.readAllBytes(Paths.get(versionsTree.getAbsolutePath()));
 	    input = new String(encoded,"UTF-8");
-		//System.out.println("Read from file : " + input);
 	} catch (Exception e) {
-		// TODO Auto-generated catch block
 		e.printStackTrace();
 	}
 	try {
-		//System.out.println("Building Tree...");
 		JSONObject graph = new JSONObject(input);
 		JSONArray nodes = graph.getJSONArray("Nodes");
 		JSONArray edges = graph.getJSONArray("Edges");
@@ -355,13 +372,8 @@ public class VCFA implements Tool {
 		if(rootInd == -1) {
 			System.out.println("Couldn't Find Root Node on Import");
 		}
-		//System.out.println("Initializing Tree...");
-		
-		//System.out.println("Found root at  :" + nodes.getJSONObject(rootInd).getString("path"));
 		Data root = new Data(nodes.getJSONObject(rootInd).getString("path"));
-		//System.out.println("Created Data Node " + root.path);
 		importTree = new Tree(root);
-		//System.out.println("Initialized Tree at :" + importTree.root.data.path);
 		
 		for(int i = 0; i < nodes.length(); i++) {
 			//System.out.println("Node Id : " + nodes.getJSONObject(i).getString("id"));
