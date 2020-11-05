@@ -249,7 +249,7 @@ function updateData(selectedNode) {
   var diff = {
     removed: nodes.filter(function (node) { return newNodes.indexOf(node) === -1 }),
     added: newNodes.filter(function (node) { return nodes.indexOf(node) === -1 })
-  }
+  } 
 
   diff.removed.forEach(function (node) { nodes.splice(nodes.indexOf(node), 1) })
   diff.added.forEach(function (node) { nodes.push(node) })
