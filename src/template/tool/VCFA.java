@@ -85,7 +85,7 @@ public class VCFA implements Tool {
   ObjectMapper mapper = new ObjectMapper();
   
   public String getMenuTitle() {
-    return "##tool.name##";
+    return "Version Control for Artists";
   }
 
 
@@ -225,6 +225,13 @@ public class VCFA implements Tool {
 	  System.out.println(versionsTree.getAbsolutePath());
 	  if(!versionsTree.exists()) {
 		  System.out.println("No Existing tree.json detected - creating a new verison history...");
+		  System.out.println(editor.getText().isEmpty());
+		  if(editor.getText().isEmpty()) {
+			  editor.setText("test");
+					  }
+		  
+		  
+
 		  String rootFolder = makeVersion(0);
 		  Data root = new Data(rootFolder);
 		  codeTree = new Tree(root);
@@ -304,6 +311,9 @@ public class VCFA implements Tool {
 					  FilenameUtils.isExtension(f.getName(), "png")) {
 				  File newFile = new File(folder.getAbsolutePath()+"/"+f.getName());
 				  copyFile(f,newFile);
+			  }
+			  if(FilenameUtils.equals(f.getName(), "render.png")) {
+				  f.delete();
 			  }
 		  }
 	  }

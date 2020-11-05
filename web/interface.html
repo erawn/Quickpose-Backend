@@ -138,8 +138,24 @@ svg.attr('width', canvasWidth).attr('height', canvasHeight)
 var linkElements,
   nodeElements,
   textElements
-  
-
+ 
+/* d3.select(svg.canvas).call(d3.zoom()
+	.scaleExtent([1,8])
+	.on("zoom", ({transform}) => zoomed(transform)));
+	
+function zoomed(transform) {
+    context.save();
+    context.clearRect(0, 0, width, height);
+    context.translate(transform.x, transform.y);
+    context.scale(transform.k, transform.k);
+    context.beginPath();
+    for (const [x, y] of data) {
+      context.moveTo(x + r, y);
+      context.arc(x, y, r, 0, 2 * Math.PI);
+    }
+    context.fill();
+    context.restore();
+  } */
 
 // we use svg groups to logically group the elements together
 var linkGroup = svg.append('g').attr('class', 'links')
@@ -155,15 +171,16 @@ var linkForce = d3
 	.forceLink()
 	.id(link => link.id)
 	.strength(link => link.strength)
+	.distance(30)
 
 var simulation = d3
   .forceSimulation()
   .force('link', linkForce)
-  //.force('charge', d3.forceManyBody().strength(-100))
-  //.force('center', d3.forceCenter(width / 2, height / 2))
+  .force('charge', d3.forceManyBody().strength(-100))
+  .force('center', d3.forceCenter(width / 2, height / 2))
   .force('collision', d3.forceCollide().radius(60))
   .velocityDecay(.90)
-  //.alphaTarget(.01);
+  .alphaTarget(.01);
   
 
 var dragDrop = d3.drag().on('start', function (node) {
@@ -268,22 +285,19 @@ function updateGraph() {
     .enter()
     .append("svg:image")
     .attr("class", "node")
-    .attr("xlink:href",  function(d) { console.log(d); return "http://localhost:8080/_19/render.png";})
-    .attr("height", 50)
-    .attr("width", 50)
+    .attr("xlink:href",  function(d) { console.log(d); return "http://localhost:8080/_" + d.id +"/render.png";})
+    .attr("height", 40)
+    .attr("width", 40)
     .attr("x", function(d) { return -25;})
     .attr("y", function(d) { return -25;})
-    
     .call(dragDrop)
     .on('click', selectNode)
    
     
-	nodeEnter.append("circle")
-    .attr("r", 30)
-    .attr("fill",  "green")
-        /* .append("circle")
-    .attr("r", 30)
+	/* nodeEnter.append("circle")
+    .attr("r", 40)
     .attr("fill",  "green") */
+ 
   nodeElements = nodeElements.merge(nodeEnter)
    	
   
@@ -315,7 +329,7 @@ function updateGraph() {
 
 function updateSimulation() {
   //updateGraph()
-
+//https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
   simulation.nodes(nodes).on('tick', () => {
     nodeElements
        .attr('cx', function (node) { return node.x = Math.max(radius, Math.min(canvasWidth - radius, node.x)); })
