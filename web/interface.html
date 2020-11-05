@@ -13,7 +13,7 @@
 </head>
 
 <body>
-<p id="testText"> Loading...</p>
+<p id="testText"> Loading</p>
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <svg width="100" height="100"></svg>
 <script>
@@ -21,7 +21,7 @@
 
 //Networking -----------------------
 
-var request = 'http://192.168.4.30:8080';
+var request = 'http://0.0.0.0:8080';
 
 const sendFork = async (url, id) => {
 	const response = await fetch(url + '/fork/' + id);
@@ -35,7 +35,7 @@ const updatePositionData = async (url, positions) => {
 		method: "POST",
 		body: JSON.stringify(positions)
 	}).then(res => {
-		console.log("POST sent, response: ", res);
+		//console.log("POST sent, response: ", res);
 	});
 
 }
@@ -116,10 +116,6 @@ function isNeighborLink(node, link) {
 }
 
 
-function getNodeColor(node, neighbors) {
-  return node.id === selectedId ? 'blue' : 'green'
-}
-
 
 function getLinkColor(node, link) {
   return isNeighborLink(node, link) ? '#E5E5E5' : '#E5E5E5'
@@ -167,19 +163,19 @@ var simulation = d3
   //.force('center', d3.forceCenter(width / 2, height / 2))
   .force('collision', d3.forceCollide().radius(60))
   .velocityDecay(.90)
-  .alphaTarget(.01);
+  //.alphaTarget(.01);
   
 
 var dragDrop = d3.drag().on('start', function (node) {
   node.fx = node.x
   node.fy = node.y
 }).on('drag', function (node) {
-  //simulation.alphaTarget(.9).restart()
+  //simulation.alphaTarget(.01)
   node.fx = d3.event.x
   node.fy = d3.event.y
 }).on('end', function (node) {
   if (!d3.event.active) {
-    //simulation.alphaTarget(.99)
+    //simulation.alphaTarget(.01)
   }
   node.fx = null
   node.fy = null
@@ -193,6 +189,7 @@ function selectNode(selectedNode) {
   if (selectedId === selectedNode.id) {
     selectedId = undefined
     sendFork(request,selectedNode.id);
+    //updateData(selectedNode) 
     updateSimulation()
   } else {
     selectedId = selectedNode.id
@@ -205,7 +202,7 @@ function selectNode(selectedNode) {
   var neighbors = getNeighbors(selectedNode)
   
   // we modify the styles to highlight selected nodes
-  nodeElements.attr('fill', function (node) { return getNodeColor(node, neighbors) })
+  //nodeElements.attr('fill', function (node) { return getNodeColor(node, neighbors) })
   textElements.attr('fill', function (node) { return getTextColor(node, neighbors) })
   linkElements.attr('stroke', function (link) { return getLinkColor(selectedNode, link) })
 }
@@ -214,9 +211,9 @@ function selectNode(selectedNode) {
 // this helper simple adds all nodes and links
 // that are missing, to recreate the initial state
 function resetData() {
-  //linkGroup = svg.append('g').attr('class', 'links');
-  //nodeGroup = svg.append('g').attr('class', 'nodes')
-  //textGroup = svg.append('g').attr('class', 'texts')
+  /* linkGroup = svg.append('g').attr('class', 'links');
+  nodeGroup = svg.append('g').attr('class', 'nodes')
+  textGroup = svg.append('g').attr('class', 'texts') */
   var nodeIds = nodes.map(function (node) { return node.id })
   baseNodes.forEach(function (node) {
     if (nodeIds.indexOf(node.id) === -1) {
@@ -256,29 +253,40 @@ function updateGraph() {
 
   var linkEnter = linkElements
     .enter().append('line')
-    .attr('stroke-width', 1)
+    .attr('stroke-width', 3)
     .attr('stroke', 'rgba(50, 50, 50, 0.2)')
 
   linkElements = linkEnter.merge(linkElements)
 
   // nodes
-  nodeElements = nodeGroup.selectAll('circle')
+  nodeElements = nodeGroup.selectAll('.node')
     .data(nodes, function (node) { return node.id })
 
-  nodeElements.exit().remove()
+  nodeElements.exit().remove() 
 
   var nodeEnter = nodeElements
     .enter()
-    .append('circle')
-    .attr('r', 20)
-    .attr('fill', function (node) {
-    	return node.id === selectedId ? 'blue' : 'green' })
+    .append("svg:image")
+    .attr("class", "node")
+    .attr("xlink:href",  function(d) { console.log(d); return "http://localhost:8080/_19/render.png";})
+    .attr("height", 50)
+    .attr("width", 50)
+    .attr("x", function(d) { return -25;})
+    .attr("y", function(d) { return -25;})
+    
     .call(dragDrop)
-    // we link the selectNode method here
-    // to update the graph on every click
     .on('click', selectNode)
-
-  nodeElements = nodeEnter.merge(nodeElements)
+   
+    
+	nodeEnter.append("circle")
+    .attr("r", 30)
+    .attr("fill",  "green")
+        /* .append("circle")
+    .attr("r", 30)
+    .attr("fill",  "green") */
+  nodeElements = nodeElements.merge(nodeEnter)
+   	
+  
 
   // texts
   textElements = textGroup.selectAll('text')
@@ -293,17 +301,28 @@ function updateGraph() {
     .attr('font-size', 15)
     .attr('dx', 15)
     .attr('dy', 4)
+    .on('click', function(node){
+    	var result = prompt('Rename Node', node.label);
+    	if(result){
+    		node.label = result;
+    		// https://stackoverflow.com/questions/22951182/how-to-rename-a-node-in-d3-graph
+    	}
+    })
 
   textElements = textEnter.merge(textElements)
 }
 
+
 function updateSimulation() {
-  updateGraph()
+  //updateGraph()
 
   simulation.nodes(nodes).on('tick', () => {
     nodeElements
-      .attr('cx', function (node) { return node.x = Math.max(radius, Math.min(canvasWidth - radius, node.x)); })
-      .attr('cy', function (node) { return node.y = Math.max(radius, Math.min(canvasHeight - radius, node.y)); })
+       .attr('cx', function (node) { return node.x = Math.max(radius, Math.min(canvasWidth - radius, node.x)); })
+       .attr('cy', function (node) { return node.y = Math.max(radius, Math.min(canvasHeight - radius, node.y)); })
+       .attr("transform", function(node) { return "translate(" + 
+    		  Math.max(radius, Math.min(canvasWidth - radius, node.x)) + "," + 
+    		  Math.max(radius, Math.min(canvasHeight - radius, node.y)) + ")"; }); 
     textElements
       .attr('x', function (node) { return node.x })
       .attr('y', function (node) { return node.y })
@@ -338,14 +357,7 @@ function update(){
 		positions.pos.push(node);
 	}
 	updatePositionData(request,JSON.stringify(positions));
-	//sendFork(request,count);
-	//console.log(selectedId)
-	
-	
-	//console.log(selectedId);
-	//console.log(data);
-	//console.log(nodes);
-	//console.log(links);
+
 	if(data != null){
 		requestCurrentId(request);
 		var changed = false;
@@ -404,36 +416,21 @@ function update(){
 			baseLinks[i].source = baseNodes[sourceInd];
 			baseLinks[i].target = baseNodes[targetInd];
 		}
-		
-		//console.log(baseLinks)
-		
+
 		links = baseLinks;
 		
 		resetData();
-		
-		//console.log(nodes)
-		//console.log(links)
-		//console.log(data[0].length)
-		
-		//baseNodes.push(...data[0]);
-		//baseLinks.push(...data[1]);
-		//baseNodes = []
-		//baseLinks = []
-		//baseNodes.push(...[data[0]][0]);
-		//baseLinks.push(data[1][1]);
-		
-		
-		//console.log(baseNodes);
-		//console.log(baseLinks);
-		//resetData();
+
 		document.getElementById("testText").innerHTML = "Complete";
 	}
 	
 	count++;
 	updateSimulation();
+	updateGraph();
 	setTimeout(update,100);
 	
 }
+updateGraph();
 update();
 
  

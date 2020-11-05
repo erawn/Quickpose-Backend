@@ -148,6 +148,9 @@ public class VCFA implements Tool {
 	  windowExecutor.schedule(window, 0, TimeUnit.SECONDS);
   }
   private void networkSetup(){
+	  
+	  staticFiles.externalLocation(versionsCode.getAbsolutePath()); 
+	  System.out.print(versionsCode.getAbsolutePath());
 	  port(8080);
 	  options("/*",
 		        (request, response) -> {
@@ -170,6 +173,11 @@ public class VCFA implements Tool {
 		        });
 
 		before((request, response) -> response.header("Access-Control-Allow-Origin", "*"));
+		
+//	  get("/", (request, response) -> {
+//			  response.redirect("interface.html");
+//			  return "";
+//		  });
 	  get("/versions.json", (request, response) -> {
 		  response.type("application/json");
 		  return codeTree.getJSON();
@@ -193,6 +201,9 @@ public class VCFA implements Tool {
 		  response.type("application/json");
 		  updatePositions(request.body());
 		  return "Success";
+	  });
+	  post("/image/:name", (request, response) -> {
+		  return null;
 	  });
 	  
   }
@@ -289,11 +300,8 @@ public class VCFA implements Tool {
 	  File[] dirListing = sketchFolder.listFiles();
 	  if(dirListing != null) {
 		  for(File f : dirListing) {
-			  if(FilenameUtils.isExtension(f.getName(), "pde")) {
-				  File newFile = new File(folder.getAbsolutePath()+"/"+f.getName());
-				  copyFile(f,newFile);
-			  }
-			  if(f.getName() == "render.png") {
+			  if(FilenameUtils.isExtension(f.getName(), "pde") ||
+					  FilenameUtils.isExtension(f.getName(), "png")) {
 				  File newFile = new File(folder.getAbsolutePath()+"/"+f.getName());
 				  copyFile(f,newFile);
 			  }
@@ -302,8 +310,10 @@ public class VCFA implements Tool {
 	  return folder.getAbsolutePath();
   }
   private void updatePositions(String input) {
+	  try {
 	  nodePositions = new JSONObject(input);
-	  System.out.println(input);
+	  } catch(Exception e){}
+	  //System.out.println(input);
   }
   
   
