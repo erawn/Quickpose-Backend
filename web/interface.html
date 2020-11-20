@@ -279,7 +279,7 @@ function updateGraph() {
   nodeElements = nodeGroup.selectAll('.node')
     .data(nodes, function (node) { return node.id })
 
-  nodeElements.exit().remove() 
+  
 
   var nodeEnter = nodeElements
     .enter()
@@ -292,7 +292,8 @@ function updateGraph() {
     .attr("y", function(d) { return -25;})
     .call(dragDrop)
     .on('click', selectNode)
-   
+    
+   nodeElements.exit().remove() 
     
 	/* nodeEnter.append("circle")
     .attr("r", 40)
@@ -328,7 +329,7 @@ function updateGraph() {
 
 
 function updateSimulation() {
-  //updateGraph()
+  updateGraph()
 //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
   simulation.nodes(nodes).on('tick', () => {
     nodeElements
