@@ -107,8 +107,6 @@ public class VCFA implements Tool {
 //		}catch(IOException e) {}
 //		//FOR TESTING ONLY
 		
-		
-		
 		dataSetup();
 		networkSetup();
 		GUISetup();
@@ -118,7 +116,7 @@ public class VCFA implements Tool {
 			  }
 		  };
 		  ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-		  executor.scheduleAtFixedRate(updateLoop, 0, 1, TimeUnit.SECONDS);
+		  executor.scheduleAtFixedRate(updateLoop, 0, 200, TimeUnit.MILLISECONDS);
 		setup = true;
 	}else {
 		GUISetup();
@@ -134,6 +132,7 @@ public class VCFA implements Tool {
   }
   
   private void update() {
+	 //check if files are modified first??
 	 saveCurrent();
 	  
   }
@@ -141,33 +140,18 @@ public class VCFA implements Tool {
   
   private void GUISetup() {
 	  
-	  System.out.println("GUI SETUP-----");
       try{
-    	  
     	  final File f = new File(this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath());
     	  System.out.println(f.getParentFile().getPath());
     	  URL url = new URL("file://" + f.getParentFile().getParentFile().getPath() + "/examples/interface.html");
-          
-          System.out.println("Attepmting to Open: " + url.toString());
           Desktop.getDesktop().browse(url.toURI());
       }
       catch(Exception E){
           System.err.println("Exp : "+E.getMessage());
       }
-//	  Runnable window = new Runnable() {
-//		  public void run() {
-//			  Application.launch(VCFAUI.class,(String[])null);
-//		  }
-//	  };
-//	  windowExecutor = Executors.newScheduledThreadPool(2);
-//	  windowExecutor.schedule(window, 0, TimeUnit.SECONDS);
+
   }
-  public String getPath(String theFilename) {
-		if (theFilename.startsWith("/")) {
-			return theFilename;
-		}
-		return File.separator + "data" + File.separator + theFilename;
-	}
+
   private void networkSetup(){
 	  
 	  staticFiles.externalLocation(versionsCode.getAbsolutePath()); 
@@ -195,6 +179,7 @@ public class VCFA implements Tool {
 
 		before((request, response) -> response.header("Access-Control-Allow-Origin", "*"));
 		
+//https://stackoverflow.com/questions/47328754/with-java-spark-how-do-i-send-a-html-file-as-a-repsonse
 //	  get("/", (request, response) -> {
 //			  response.redirect("interface.html");
 //			  return "";
