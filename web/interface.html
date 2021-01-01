@@ -293,6 +293,11 @@ function updateGraph() {
     .call(dragDrop)
     .on('click', selectNode)
     
+   nodeElements.attr("xlink:href",  function(d) { console.log(d); return "http://localhost:8080/_" + d.id +"/render.png";})
+   //nodeElements.attr("x",  function(d) { console.log(d); return -25;})
+   //nodeElements.attr("y",  function(d) { console.log(d); return -25;})
+   
+    
    nodeElements.exit().remove() 
     
 	/* nodeEnter.append("circle")
