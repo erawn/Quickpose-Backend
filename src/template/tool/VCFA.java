@@ -27,26 +27,22 @@ package template.tool;
 
 import static spark.Spark.*;
 import com.google.gson.Gson;
-import com.google.gson.stream.JsonReader;
 
 import com.fasterxml.jackson.databind.*;
 import static spark.Filter.*;
 
-import java.io.BufferedReader;
+
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
+
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.Executors;
@@ -59,12 +55,16 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import javafx.application.Application;
+
 import processing.app.Base;
 import processing.app.Sketch;
 import processing.app.SketchCode;
 import processing.app.tools.Tool;
 import processing.app.ui.Editor;
+
+import java.awt.Desktop;
+import java.net.URL;
+import java.util.Scanner;
 
 // when creating a tool, the name of the main class which implements Tool must
 // be the same as the value defined for project.name in your build.properties
@@ -111,7 +111,7 @@ public class VCFA implements Tool {
 		
 		dataSetup();
 		networkSetup();
-		//GUISetup();
+		GUISetup();
 		Runnable updateLoop = new Runnable() {
 			  public void run() {
 				  update();
@@ -121,7 +121,7 @@ public class VCFA implements Tool {
 		  executor.scheduleAtFixedRate(updateLoop, 0, 1, TimeUnit.SECONDS);
 		setup = true;
 	}else {
-		
+		GUISetup();
 	}
 	 
      //System.out.println("Sketch Folder at : " + sketchFolder.getAbsolutePath());
@@ -140,14 +140,34 @@ public class VCFA implements Tool {
 
   
   private void GUISetup() {
-	  Runnable window = new Runnable() {
-		  public void run() {
-			  Application.launch(VCFAUI.class,(String[])null);
-		  }
-	  };
-	  windowExecutor = Executors.newScheduledThreadPool(2);
-	  windowExecutor.schedule(window, 0, TimeUnit.SECONDS);
+	  
+	  System.out.println("GUI SETUP-----");
+      try{
+    	  
+    	  final File f = new File(this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath());
+    	  System.out.println(f.getParentFile().getPath());
+    	  URL url = new URL("file://" + f.getParentFile().getParentFile().getPath() + "/examples/interface.html");
+          
+          System.out.println("Attepmting to Open: " + url.toString());
+          Desktop.getDesktop().browse(url.toURI());
+      }
+      catch(Exception E){
+          System.err.println("Exp : "+E.getMessage());
+      }
+//	  Runnable window = new Runnable() {
+//		  public void run() {
+//			  Application.launch(VCFAUI.class,(String[])null);
+//		  }
+//	  };
+//	  windowExecutor = Executors.newScheduledThreadPool(2);
+//	  windowExecutor.schedule(window, 0, TimeUnit.SECONDS);
   }
+  public String getPath(String theFilename) {
+		if (theFilename.startsWith("/")) {
+			return theFilename;
+		}
+		return File.separator + "data" + File.separator + theFilename;
+	}
   private void networkSetup(){
 	  
 	  staticFiles.externalLocation(versionsCode.getAbsolutePath()); 
@@ -222,12 +242,12 @@ public class VCFA implements Tool {
 	     }
 	  
 	  versionsTree = new File(versionsCode.getAbsolutePath() + "/tree.json");
-	  System.out.println(versionsTree.getAbsoluteFile());
-	  System.out.println(versionsTree.getAbsolutePath());
+	  //System.out.println(versionsTree.getAbsoluteFile());
+	  //System.out.println(versionsTree.getAbsolutePath());
 	  if(!versionsTree.exists()) {
-		  System.out.println("No Existing tree.json detected - creating a new verison history...");
+		 //System.out.println("No Existing tree.json detected - creating a new verison history...");
 
-		  System.out.println(editor.getText().isEmpty());
+		 // System.out.println(editor.getText().isEmpty());
 		  if(editor.getText().isEmpty()) {
 			  editor.setText("test");
 					  }
@@ -237,9 +257,8 @@ public class VCFA implements Tool {
 		  codeTree = new Tree(root);
 		  writeJSONFromRoot(); 
 	  }else {
-		  System.out.println("Existing tree.json detected! Reading...");
+		  //System.out.println("Existing tree.json detected! Reading...");
 		  readJSONToRoot();
-		  System.out.println("Created New Version Tree");
 	  }	 
   }
   

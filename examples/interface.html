@@ -122,7 +122,7 @@ function getLinkColor(node, link) {
 }
 
 function getTextColor(node, neighbors) {
-  return Array.isArray(neighbors) && neighbors.indexOf(node.id) > -1 ? 'green' : 'black'
+  return node.id == selectedId ? 'green' : 'black'
 }
 
 var width = window.innerWidth
@@ -240,7 +240,7 @@ function resetData() {
 }
 
 // diffing and mutating the data
-function updateData(selectedNode) {
+/* function updateData(selectedNode) {
   var neighbors = getNeighbors(selectedNode)
   var newNodes = baseNodes.filter(function (node) {
     return neighbors.indexOf(node.id) > -1 || node.level === 1
@@ -257,7 +257,7 @@ function updateData(selectedNode) {
   links = baseLinks.filter(function (link) {
     return link.target.id === selectedNode.id || link.source.id === selectedNode.id
   })
-}
+} */
 
 function updateGraph() {
   // links

@@ -34,8 +34,6 @@
 	<classpathentry kind="lib" path="lib/spark-core-2.9.1-javadoc.jar"/>
 	<classpathentry kind="lib" path="lib/spark-core-2.9.1-sources.jar"/>
 	<classpathentry kind="lib" path="lib/jetty-all-9.4.29.v20200521-uber.jar"/>
-	<classpathentry kind="lib" path="lib/slf4j-simple-1.7.30.jar"/>
-	<classpathentry kind="lib" path="lib/slf4j-api-1.7.30.jar"/>
 	<classpathentry kind="lib" path="lib/servlet-api-3.0-alpha-1-javadoc.jar"/>
 	<classpathentry kind="lib" path="lib/servlet-api-3.0-alpha-1-sources.jar"/>
 	<classpathentry kind="lib" path="lib/servlet-api-3.0-alpha-1.jar"/>
