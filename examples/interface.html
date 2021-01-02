@@ -40,6 +40,7 @@ const updatePositionData = async (url, positions) => {
 
 }
 
+
 var data = null;
 var count = 0;
 const requestData = async (url) => {
@@ -47,7 +48,10 @@ const requestData = async (url) => {
 	const json = await response.json();
 	data = json;
 }
+
+
 var selectedId = -1;
+
 
 //D3 --------------------------
 /*var baseNodes = [
@@ -86,17 +90,7 @@ var links = [...baseLinks]
 //console.log(links);
 
 
-const requestCurrentId = async (url) => {
-	const response = await fetch(url+'/currentVersion');
-	const id = await response.json();
 
- 	if(selectedId != id){
- 		var nodeIds = nodes.map(function (node) { return node.id })
-		 selectNode(nodes[nodeIds.indexOf(id.toString())]);
-		selectedId = id;
-	} 
-
-}
 
 function getNeighbors(node) {
   return baseLinks.reduce(function (neighbors, link) {
@@ -121,7 +115,7 @@ function getLinkColor(node, link) {
   return isNeighborLink(node, link) ? '#E5E5E5' : '#E5E5E5'
 }
 
-function getTextColor(node, neighbors) {
+function getTextColor(node) {
   return node.id == selectedId ? 'green' : 'black'
 }
 
@@ -164,7 +158,16 @@ var textGroup = svg.append('g').attr('class', 'texts')
 
 // we use this reference to select/deselect
 // after clicking the same element twice
-
+const requestCurrentId = async (url) => {
+	const response = await fetch(url+'/currentVersion');
+	const id = await response.json();
+	if(selectedId !== id){
+		console.log(id)
+		selectedId = id;
+		textElements.attr('fill', function (node) { return getTextColor(node) })
+	}
+ 	
+}
 
 // simulation setup with all forces
 var linkForce = d3
@@ -203,27 +206,18 @@ var dragDrop = d3.drag().on('start', function (node) {
 // or reset the data if the same node is clicked twice
 function selectNode(selectedNode) {
 	
-  if (selectedId === selectedNode.id) {
-    selectedId = undefined
-    sendFork(request,selectedNode.id);
-    //updateData(selectedNode) 
-    updateSimulation()
-  } else {
-    selectedId = selectedNode.id
-    sendSelect(request,selectedNode.id);
-    //updateData(selectedNode)
-    updateSimulation()
-  }
-  //selectedNode.attr('fill', function (node) {return 'blue'})
-  
-  var neighbors = getNeighbors(selectedNode)
-  
-  // we modify the styles to highlight selected nodes
-  //nodeElements.attr('fill', function (node) { return getNodeColor(node, neighbors) })
-  textElements.attr('fill', function (node) { return getTextColor(node, neighbors) })
-  linkElements.attr('stroke', function (link) { return getLinkColor(selectedNode, link) })
+  selectedId = selectedNode.id
+  sendSelect(request,selectedNode.id);
+  textElements.attr('fill', function (node) { return getTextColor(node) })
 }
-
+function doubleClicked(selectedNode) {
+	
+  selectedId = undefined
+  sendFork(request,selectedNode.id);
+  updateSimulation()   
+  textElements.attr('fill', function (node) { return getTextColor(node) })
+	
+}
 
 // this helper simple adds all nodes and links
 // that are missing, to recreate the initial state
@@ -285,15 +279,15 @@ function updateGraph() {
     .enter()
     .append("svg:image")
     .attr("class", "node")
-    .attr("xlink:href",  function(d) { console.log(d); return "http://localhost:8080/_" + d.id +"/render.png";})
     .attr("height", 40)
     .attr("width", 40)
     .attr("x", function(d) { return -25;})
     .attr("y", function(d) { return -25;})
     .call(dragDrop)
     .on('click', selectNode)
+    .on('dblclick',doubleClicked)
     
-   nodeElements.attr("xlink:href",  function(d) { console.log(d); return "http://localhost:8080/_" + d.id +"/render.png";})
+   nodeElements.attr("xlink:href",  function(node) {return "http://localhost:8080/_" + node.id +"/render.png";})
    //nodeElements.attr("x",  function(d) { console.log(d); return -25;})
    //nodeElements.attr("y",  function(d) { console.log(d); return -25;})
    

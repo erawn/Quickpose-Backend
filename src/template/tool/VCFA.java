@@ -368,7 +368,6 @@ public class VCFA implements Tool {
 		JSONArray nodes = graph.getJSONArray("Nodes");
 		JSONArray edges = graph.getJSONArray("Edges");
 		
-		
 		for(int i = 0; i < nodes.length(); i++) {
 			//System.out.println("Node Id : " + nodes.getJSONObject(i).getString("id"));
 		}
