@@ -286,6 +286,14 @@ public class VCFA implements Tool {
 		 System.out.println("Attempted to change active version to invalid Id");
 		 return;
 	 }
+	 File[] sketchListing = sketchFolder.listFiles();
+	 if(sketchListing != null) {
+		  for(File f : sketchListing) {
+			  if(FilenameUtils.equals(f.getName(), "render.png")) {
+				  f.delete();
+			  }
+		  }
+	  }
 	 
 	 File versionFolder = new File(codeTree.getNode(id).data.path);
 	 File[] versionListing = versionFolder.listFiles();
@@ -312,12 +320,9 @@ public class VCFA implements Tool {
 	  if(dirListing != null) {
 		  for(File f : dirListing) {
 			  if(FilenameUtils.isExtension(f.getName(), "pde") ||
-					  FilenameUtils.isExtension(f.getName(), "png")) {
+					  FilenameUtils.equals(f.getName(), "render.png")) {
 				  File newFile = new File(folder.getAbsolutePath()+"/"+f.getName());
 				  copyFile(f,newFile);
-			  }
-			  if(FilenameUtils.equals(f.getName(), "render.png")) {
-				  f.delete();
 			  }
 		  }
 	  }
@@ -441,7 +446,9 @@ public class VCFA implements Tool {
   
   private static void copyFile(File src, File dest){
 	  try {
-		Files.copy(src.toPath(), dest.toPath(),StandardCopyOption.REPLACE_EXISTING);
+		if(!FileUtils.contentEquals(src, dest)) {
+			Files.copy(src.toPath(), dest.toPath(),StandardCopyOption.REPLACE_EXISTING);
+		}
 	} catch (IOException e) {
 		// TODO Auto-generated catch block
 		e.printStackTrace();
