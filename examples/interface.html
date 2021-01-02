@@ -109,14 +109,16 @@ function isNeighborLink(node, link) {
   return link.target.id === node.id || link.source.id === node.id
 }
 
-
-
 function getLinkColor(node, link) {
   return isNeighborLink(node, link) ? '#E5E5E5' : '#E5E5E5'
 }
 
 function getTextColor(node) {
   return node.id == selectedId ? 'green' : 'black'
+}
+
+function getIconImage(node){
+	return "http://localhost:8080/_" + node.id +"/render.png";
 }
 
 var width = window.innerWidth
@@ -287,7 +289,8 @@ function updateGraph() {
     .on('click', selectNode)
     .on('dblclick',doubleClicked)
     
-   nodeElements.attr("xlink:href",  function(node) {return "http://localhost:8080/_" + node.id +"/render.png";})
+   nodeElements.attr("xlink:href",  function(node) {return null});
+   
    //nodeElements.attr("x",  function(d) { console.log(d); return -25;})
    //nodeElements.attr("y",  function(d) { console.log(d); return -25;})
    
@@ -315,7 +318,7 @@ function updateGraph() {
     .attr('font-size', 15)
     .attr('dx', 15)
     .attr('dy', 4)
-    .on('click', function(node){
+    .on('dblclick', function(node){
     	var result = prompt('Rename Node', node.label);
     	if(result){
     		node.label = result;
@@ -336,7 +339,8 @@ function updateSimulation() {
        .attr('cy', function (node) { return node.y = Math.max(radius, Math.min(canvasHeight - radius, node.y)); })
        .attr("transform", function(node) { return "translate(" + 
     		  Math.max(radius, Math.min(canvasWidth - radius, node.x)) + "," + 
-    		  Math.max(radius, Math.min(canvasHeight - radius, node.y)) + ")"; }); 
+    		  Math.max(radius, Math.min(canvasHeight - radius, node.y)) + ")"; })
+       .attr("xlink:href",  function(node) {return getIconImage(node)}); 
     textElements
       .attr('x', function (node) { return node.x })
       .attr('y', function (node) { return node.y })
@@ -355,6 +359,7 @@ function updateSimulation() {
 // to trigger the initial render
 
 function update(){
+	//nodeElements.attr("xlink:href",  function(node) {return getIconImage(node)}); 
 	requestData(request);
 	
 	var positions = {};
@@ -443,11 +448,12 @@ function update(){
 		links = baseLinks;
 		
 		resetData();
-
+		
+		//nodeElements.attr("xlink:href",  function(node) {return "http://localhost:8080/_" + node.id +"/render.png";})
+	    //nodeElements.attr("xlink:href",  function(node) {return getIconImage(node)}); 
 		document.getElementById("testText").innerHTML = "Complete";
 	}
-	
-	count++;
+	//nodeElements.attr("xlink:href",  function(node) {return getIconImage(node)}); 
 	updateSimulation();
 	updateGraph();
 	setTimeout(update,100);
