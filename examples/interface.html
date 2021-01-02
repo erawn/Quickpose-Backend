@@ -42,7 +42,6 @@ const updatePositionData = async (url, positions) => {
 
 
 var data = null;
-var count = 0;
 const requestData = async (url) => {
 	const response = await fetch(url+'/versions.json');
 	const json = await response.json();
@@ -288,8 +287,7 @@ function updateGraph() {
     .call(dragDrop)
     .on('click', selectNode)
     .on('dblclick',doubleClicked)
-    
-   nodeElements.attr("xlink:href",  function(node) {return null});
+    .attr("xlink:href",  function(node) {return getIconImage(node)});
    
    //nodeElements.attr("x",  function(d) { console.log(d); return -25;})
    //nodeElements.attr("y",  function(d) { console.log(d); return -25;})
@@ -329,7 +327,7 @@ function updateGraph() {
   textElements = textEnter.merge(textElements)
 }
 
-
+var count = 0;
 function updateSimulation() {
   updateGraph()
 //https://stackoverflow.com/questions/18206231/saving-and-reloading-a-force-layout-using-d3-js
@@ -340,7 +338,6 @@ function updateSimulation() {
        .attr("transform", function(node) { return "translate(" + 
     		  Math.max(radius, Math.min(canvasWidth - radius, node.x)) + "," + 
     		  Math.max(radius, Math.min(canvasHeight - radius, node.y)) + ")"; })
-       .attr("xlink:href",  function(node) {return getIconImage(node)}); 
     textElements
       .attr('x', function (node) { return node.x })
       .attr('y', function (node) { return node.y })
@@ -349,6 +346,16 @@ function updateSimulation() {
       .attr('y1', function (link) { return link.source.y })
       .attr('x2', function (link) { return link.target.x })
       .attr('y2', function (link) { return link.target.y })
+      
+      if(count % 100 == 0){
+  		nodeElements.attr("xlink:href",  function(node) {return null});
+	 	}else{
+	 		nodeElements.attr("xlink:href",  function(node) {return getIconImage(node)});
+	 	}
+	    count++;
+		if(count > 1000){
+			count = 0;
+		}
   })
 
   simulation.force('link').links(links)
