@@ -305,7 +305,7 @@ public class VCFA implements Tool {
 			  }
 		  }
 	  }
-	 base.getActiveEditor().getSketch().reload();
+	 //base.getActiveEditor().getSketch().reload();
 	 base.getActiveEditor().handleSave(true);
 	 currentVersion = id;
 	// System.out.println("Switched version to "+ id );
