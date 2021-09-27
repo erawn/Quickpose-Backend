@@ -21,7 +21,7 @@
 
 //Networking -----------------------
 
-var request = 'http://0.0.0.0:8080';
+var request = 'http://127.0.0.1:8080/';
 
 const sendFork = async (url, id) => {
 	const response = await fetch(url + '/fork/' + id);
@@ -117,7 +117,7 @@ function getTextColor(node) {
 }
 
 function getIconImage(node){
-	return "http://localhost:8080/_" + node.id +"/render.png";
+	return request + "_" + node.id +"/render.png";
 }
 
 var width = window.innerWidth

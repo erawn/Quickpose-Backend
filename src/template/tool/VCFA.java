@@ -28,7 +28,7 @@ package template.tool;
 import static spark.Spark.*;
 import com.google.gson.Gson;
 
-import com.fasterxml.jackson.databind.*;
+//import com.fasterxml.jackson.databind.*;
 import static spark.Filter.*;
 
 
@@ -62,8 +62,6 @@ import processing.app.SketchCode;
 import processing.app.tools.Tool;
 import processing.app.ui.Editor;
 
-import java.awt.Desktop;
-import java.net.URL;
 import java.util.Scanner;
 
 // when creating a tool, the name of the main class which implements Tool must
@@ -80,10 +78,9 @@ public class VCFA implements Tool {
   public int currentVersion;
   public Editor editor;
   ScheduledExecutorService windowExecutor;
-  VCFAUI ui;
   JSONObject nodePositions;
   private static Gson gson = new Gson();
-  ObjectMapper mapper = new ObjectMapper();
+  //ObjectMapper mapper = new ObjectMapper();
   
   public String getMenuTitle() {
     return "Version Control for Artists";
@@ -143,8 +140,9 @@ public class VCFA implements Tool {
       try{
     	  final File f = new File(this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath());
     	  System.out.println(f.getParentFile().getPath());
-    	  URL url = new URL("file://" + f.getParentFile().getParentFile().getPath() + "/examples/interface.html");
-          Desktop.getDesktop().browse(url.toURI());
+    	  File webpage = new File(f.getParentFile().getParentFile().getPath() + "/examples/interface.html");
+    	  System.err.println(webpage.getAbsolutePath());
+          //Desktop.getDesktop().browse(url.toURI());
       }
       catch(Exception E){
           System.err.println("Exp : "+E.getMessage());
@@ -180,10 +178,10 @@ public class VCFA implements Tool {
 		before((request, response) -> response.header("Access-Control-Allow-Origin", "*"));
 		
 //https://stackoverflow.com/questions/47328754/with-java-spark-how-do-i-send-a-html-file-as-a-repsonse
-//	  get("/", (request, response) -> {
-//			  response.redirect("interface.html");
-//			  return "";
-//		  });
+	  get("/", (request, response) -> {
+			  response.redirect("interface.html");
+			  return "";
+		  });
 	  get("/versions.json", (request, response) -> {
 		  response.type("application/json");
 		  return codeTree.getJSON();
