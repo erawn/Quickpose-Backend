@@ -16,79 +16,20 @@
 <p id="testText"> Loading</p>
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script src="https://unpkg.com/konva@8/konva.min.js"></script>
+<script src="VFCANetworking.js"></script>
 
 <svg width="100" height="100"></svg>
 <script>
 
 
-//Networking -----------------------
 
-var request = 'http://127.0.0.1:8080/';
-
-const sendFork = async (url, id) => {
-	const response = await fetch(url + '/fork/' + id);
-}
-const sendSelect = async (url, id) => {
-	const response = await fetch(url + '/select/' + id);
-}
-
-const updatePositionData = async (url, positions) => {
-	const response = await fetch(url + '/positions.json', {
-		method: "POST",
-		body: JSON.stringify(positions)
-	}).then(res => {
-		//console.log("POST sent, response: ", res);
-	});
-
-}
-
-
-var data = null;
-const requestData = async (url) => {
-	const response = await fetch(url+'/versions.json');
-	const json = await response.json();
-	data = json;
-}
-
-
-var selectedId = -1;
 
 
 //D3 --------------------------
-/*var baseNodes = [
-  { id: "0", group: 0, label: "One", level: 1 },
-  { id: "1"   , group: 0, label: "Two"   , level: 1 },
-  { id: "2"   , group: 0, label: "Three"   , level: 1 },
-  { id: "3"   , group: 0, label: "Four"  , level: 1 },
-  { id: "4"   , group: 0, label: "Five"    , level: 1 },
-  { id: "5", group: 0, label: "Six", level: 1 },
-  { id: "6", group: 0, label: "Seven", level: 1 }
-] 
-
- 	var baseLinks = [
-		{ target: "0", source: "1" , strength: 0.7 },
-		{ target: "0", source: "2" , strength: 0.7 },
-	  { target: "2", source: "3" , strength: 0.7 },
-	  { target: "2", source: "4" , strength: 0.7 },
-	  { target: "3", source: "5" , strength: 0.7 },
-	  { target: "0", source: "6" , strength: 0.7 }
-	]*/
-/*var baseNodes = [
-	  { id: "0", group: 0, label: "One", level: 1 },
-	  { id: "1"   , group: 0, label: "Two"   , level: 1 },
-
-	] 
-
-	 	var baseLinks = [
-			{ target: "0", source: "1" , strength: 0.7 },
-
-		]*/
 var baseNodes = []; 
 var baseLinks = [];
 var nodes = [...baseNodes]
 var links = [...baseLinks]
-//console.log(nodes);
-//console.log(links);
 
 
 
@@ -118,10 +59,6 @@ function getTextColor(node) {
   return node.id == selectedId ? 'green' : 'black'
 }
 
-function getIconImage(node){
-	return request + "_" + node.id +"/render.png";
-}
-
 var width = window.innerWidth
 var height = window.innerHeight
 
@@ -135,42 +72,11 @@ svg.attr('width', canvasWidth).attr('height', canvasHeight)
 var linkElements,
   nodeElements,
   textElements
- 
-/* d3.select(svg.canvas).call(d3.zoom()
-	.scaleExtent([1,8])
-	.on("zoom", ({transform}) => zoomed(transform)));
-	
-function zoomed(transform) {
-    context.save();
-    context.clearRect(0, 0, width, height);
-    context.translate(transform.x, transform.y);
-    context.scale(transform.k, transform.k);
-    context.beginPath();
-    for (const [x, y] of data) {
-      context.moveTo(x + r, y);
-      context.arc(x, y, r, 0, 2 * Math.PI);
-    }
-    context.fill();
-    context.restore();
-  } */
 
 // we use svg groups to logically group the elements together
 var linkGroup = svg.append('g').attr('class', 'links')
 var nodeGroup = svg.append('g').attr('class', 'nodes')
 var textGroup = svg.append('g').attr('class', 'texts')
-
-// we use this reference to select/deselect
-// after clicking the same element twice
-const requestCurrentId = async (url) => {
-	const response = await fetch(url+'/currentVersion');
-	const id = await response.json();
-	if(selectedId !== id){
-		console.log(id)
-		selectedId = id;
-		textElements.attr('fill', function (node) { return getTextColor(node) })
-	}
- 	
-}
 
 // simulation setup with all forces
 var linkForce = d3
@@ -204,30 +110,31 @@ var dragDrop = d3.drag().on('start', function (node) {
   node.fy = null
 })
 
-// select node is called on every click
-// we either update the data according to the selection
-// or reset the data if the same node is clicked twice
+
 function selectNode(selectedNode) {
 	
   selectedId = selectedNode.id
-  sendSelect(request,selectedNode.id);
+  sendSelect(selectedNode.id);
   textElements.attr('fill', function (node) { return getTextColor(node) })
 }
 function doubleClicked(selectedNode) {
 	
   selectedId = undefined
-  sendFork(request,selectedNode.id);
-  updateSimulation()   
+  sendFork(selectedNode.id).then(childId => {
+    update()
+    console.log(nodes)
+    console.log(nodes.find(n => n.id == 44))
+    console.log(childId.toString())
+    console.log(childId)
+    
+    
+  })
+     
   textElements.attr('fill', function (node) { return getTextColor(node) })
 	
 }
 
-// this helper simple adds all nodes and links
-// that are missing, to recreate the initial state
 function resetData() {
-  /* linkGroup = svg.append('g').attr('class', 'links');
-  nodeGroup = svg.append('g').attr('class', 'nodes')
-  textGroup = svg.append('g').attr('class', 'texts') */
   var nodeIds = nodes.map(function (node) { return node.id })
   baseNodes.forEach(function (node) {
     if (nodeIds.indexOf(node.id) === -1) {
@@ -235,26 +142,6 @@ function resetData() {
     }
   })
 }
-
-// diffing and mutating the data
-/* function updateData(selectedNode) {
-  var neighbors = getNeighbors(selectedNode)
-  var newNodes = baseNodes.filter(function (node) {
-    return neighbors.indexOf(node.id) > -1 || node.level === 1
-  })
-
-  var diff = {
-    removed: nodes.filter(function (node) { return newNodes.indexOf(node) === -1 }),
-    added: newNodes.filter(function (node) { return nodes.indexOf(node) === -1 })
-  } 
-
-  diff.removed.forEach(function (node) { nodes.splice(nodes.indexOf(node), 1) })
-  diff.added.forEach(function (node) { nodes.push(node) })
-
-  links = baseLinks.filter(function (link) {
-    return link.target.id === selectedNode.id || link.source.id === selectedNode.id
-  })
-} */
 
 function updateGraph() {
   // links
@@ -291,15 +178,8 @@ function updateGraph() {
     .on('dblclick',doubleClicked)
     .attr("xlink:href",  function(node) {return getIconImage(node)});
    
-   //nodeElements.attr("x",  function(d) { console.log(d); return -25;})
-   //nodeElements.attr("y",  function(d) { console.log(d); return -25;})
-   
     
-   nodeElements.exit().remove() 
-    
-	/* nodeEnter.append("circle")
-    .attr("r", 40)
-    .attr("fill",  "green") */
+  nodeElements.exit().remove() 
  
   nodeElements = nodeElements.merge(nodeEnter)
    	
@@ -368,8 +248,7 @@ function updateSimulation() {
 // to trigger the initial render
 
 function update(){
-	//nodeElements.attr("xlink:href",  function(node) {return getIconImage(node)}); 
-	requestData(request);
+  requestData(request);
 	
 	var positions = {};
 	var pos = [];
@@ -386,14 +265,6 @@ function update(){
 	}
 
 	//updatePositionData(request,JSON.stringify(positions));
-	//sendFork(request,count);
-	//console.log(selectedId)
-	
-	
-	//console.log(selectedId);
-	//console.log(data);
-	//console.log(nodes);
-	//console.log(links);
 
 	if(data != null){
 		requestCurrentId(request);
@@ -457,12 +328,9 @@ function update(){
 		links = baseLinks;
 		
 		resetData();
-		
-		//nodeElements.attr("xlink:href",  function(node) {return "http://localhost:8080/_" + node.id +"/render.png";})
-	    //nodeElements.attr("xlink:href",  function(node) {return getIconImage(node)}); 
+
 		document.getElementById("testText").innerHTML = "Complete";
 	}
-	//nodeElements.attr("xlink:href",  function(node) {return getIconImage(node)}); 
 	updateSimulation();
 	updateGraph();
 	setTimeout(update,100);

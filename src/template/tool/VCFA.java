@@ -20,6 +20,9 @@
  *
  * @author   ##author##
  * @modified ##date##
+ * 
+ * 
+ * 
  * @version  ##tool.prettyVersion##
  */
 
@@ -80,7 +83,6 @@ public class VCFA implements Tool {
   ScheduledExecutorService windowExecutor;
   JSONObject nodePositions;
   private static Gson gson = new Gson();
-  //ObjectMapper mapper = new ObjectMapper();
   
   public String getMenuTitle() {
     return "Version Control for Artists";
@@ -186,14 +188,13 @@ public class VCFA implements Tool {
 		  response.type("application/json");
 		  return codeTree.getJSON();
 	  });
-	  get("/fork/:name", (request, response) -> {
+	  get("/fork/:id", (request, response) -> {
 		  //System.out.println("Fork on :"+ request.params(":name"));
-		  fork(Integer.parseInt(request.params(":name")));
-		  return "Success";
+		  return fork(Integer.parseInt(request.params(":id")));
 	  });
-	  get("/select/:name", (request, response) -> {
+	  get("/select/:id", (request, response) -> {
 		  //System.out.println("Select Node :"+ request.params(":name"));
-		  currentVersion = Integer.parseInt(request.params(":name"));
+		  currentVersion = Integer.parseInt(request.params(":id"));
 		  changeActiveVersion(currentVersion);
 		  return "Success";
 	  });
