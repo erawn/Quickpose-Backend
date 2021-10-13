@@ -37,11 +37,11 @@ import static spark.Filter.*;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.OutputStream;
 
 import java.io.FileWriter;
 import java.io.IOException;
 import java.awt.Desktop;
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -51,6 +51,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import javax.servlet.http.HttpServletResponse;
+import javax.imageio.ImageIO;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -142,8 +144,8 @@ public class VCFA implements Tool {
       try{
     	  final File f = new File(this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath());
     	  System.out.println(f.getParentFile().getPath());
-    	  File webpage = new File(f.getParentFile().getParentFile().getPath() + "/examples/interface.html");
-    	  System.err.println(webpage.getAbsolutePath());
+    	  //File webpage = new File(f.getParentFile().getParentFile().getPath() + "/examples/interface.html");
+    	  //System.err.println(webpage.getAbsolutePath());
           //Desktop.getDesktop().browse(url.toURI());
       }
       catch(Exception E){
@@ -153,9 +155,7 @@ public class VCFA implements Tool {
   }
 
   private void networkSetup(){
-	  
-	  staticFiles.externalLocation(versionsCode.getAbsolutePath()); 
-	  System.out.print(versionsCode.getAbsolutePath());
+
 	  port(8080);
 	  options("/*",
 		        (request, response) -> {
@@ -181,7 +181,7 @@ public class VCFA implements Tool {
 		
 //https://stackoverflow.com/questions/47328754/with-java-spark-how-do-i-send-a-html-file-as-a-repsonse
 	  get("/", (request, response) -> {
-			  response.redirect("interface.html");
+			  //response.redirect("interface.html");
 			  return "";
 		  });
 	  get("/versions.json", (request, response) -> {
@@ -207,8 +207,23 @@ public class VCFA implements Tool {
 		  updatePositions(request.body());
 		  return "Success";
 	  });
-	  post("/image/:name", (request, response) -> {
-		  return null;
+	  get("/image/:id", (request, response) -> {
+		File f = new File(versionsCode.getAbsolutePath() + "/_" + request.params(":id") + "/render.png");
+		if(f.exists()){
+			response.status(200);
+		}else{
+			response.status(201);
+			f = new File(sketchFolder.getParentFile().getAbsolutePath() + "/tools/VCFA/examples/noicon.png");
+		}
+
+		try (OutputStream out = response.raw().getOutputStream()) {
+			response.header("Content-Disposition", "inline; filename=render.png");
+			Files.copy(f.toPath(), out);
+			out.flush();
+			out.close();
+			
+			return response;
+		}
 	  });
 	  
   }

@@ -44,5 +44,24 @@ const requestData = async (url) => {
 }
 
 function getIconImage(node){
-	return request + "/_" + node.id +"/render.png";
+
+	console.log(fetchIconImage(node))
 }
+
+const fetchIconImage = async (node) => {
+	const response = await fetch(request + "/image/" + node.id)
+	if(response.status== 200){
+		await response.url.then(url => {
+			return url
+		});
+	}
+	return null
+}
+
+// fetch(myRequest).then(function(response) {
+// 	console.log(response.status); // returns 200
+// 	response.blob().then(function(myBlob) {
+// 	  var objectURL = URL.createObjectURL(myBlob);
+// 	  myImage.src = objectURL;
+// 	});
+//   });
