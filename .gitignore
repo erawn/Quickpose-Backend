@@ -2,3 +2,5 @@ bin
 tmp
 distribution
 /target/
+.classpath
+.project
