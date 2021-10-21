@@ -112,14 +112,7 @@
       textElements.attr('fill', function (node) { return getTextColor(node) })
     }
 
-    function resetData() {
-      var nodeIds = nodes.map(function (node) { return node.id })
-      baseNodes.forEach(function (node) {
-        if (nodeIds.indexOf(node.id) === -1) {
-          nodes.push(node)
-        }
-      })
-    }
+    
 
     function updateGraph() {
       // links
@@ -140,8 +133,6 @@
       // nodes
       nodeElements = nodeGroup.selectAll('.node')
         .data(nodes, function (node) { return node.id })
-
-
 
       var nodeEnter = nodeElements
         .enter()
@@ -224,10 +215,9 @@
         requestCurrentId(request);
         nodes = updateNodes(data[0], nodes)
         links = updateLinks(data[1], baseNodes)
-        resetData();
-        
-
-        document.getElementById("testText").innerHTML = "Complete";
+        nodes = resetData(nodes,baseNodes); //TODO: Figure out how to get rid of this??
+    
+        document.getElementById("testText").innerHTML = "Loaded";
       }
       updateSimulation();
       setTimeout(update, 100);

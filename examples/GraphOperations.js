@@ -1,3 +1,14 @@
+
+function resetData(nodes,baseNodes) {
+    var nodeIds = nodes.map(function (node) { return node.id })
+    baseNodes.forEach(function (node) {
+      if (nodeIds.indexOf(node.id) === -1) {
+        nodes.push(node)
+      }
+    })
+    return nodes
+  }
+
 function updateNodes(input_nodes,nodes){
     var newIndicies = [];
     var oldIndicies = [];
