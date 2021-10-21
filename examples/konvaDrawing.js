@@ -60,7 +60,9 @@ function newCircle(node) {
     });
     circle.on('dragmove', () => {
       node.x = circle.x(),
-      node.y = circle.y();
+      node.y = circle.y(),
+      node.fx = circle.x(),
+      node.fy = circle.y();
     })
     circle.on('dragmove', () => {
       //force.resume();

@@ -201,6 +201,7 @@
           .attr('y2', function (link) { return link.target.y })
         nodeElements.attr("xlink:href", function (node) { return getIconImage({ id: -1 }) });
         nodeElements.attr("xlink:href", function (node) { return getIconImage(node) });
+        graphicsUpdate();
       })
 
       simulation.force('link').links(links)
@@ -227,11 +228,10 @@
     function graphicsUpdate(){
       konvaUpdate(nodes,links);
       konvaDrawLayer();
-      setTimeout(graphicsUpdate,5)
     }
 
     update();
-    graphicsUpdate();
+    
 
 
   </script>
