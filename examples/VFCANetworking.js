@@ -44,12 +44,20 @@ const requestData = async (url) => {
 }
 
 function getIconImage(node){
-
-	console.log(fetchIconImage(node))
+	return request + "/image/" + node.id;
+	const response = fetch(request + "/image/" + node.id);
+	// if(response.status== 200){
+	// 	return response.url;
+	// }
+	// return null
+	//console.log(fetchIconImage(node))
 }
 
-const fetchIconImage = async (node) => {
-	const response = await fetch(request + "/image/" + node.id)
+async function fetchIconImages(nodes) {
+	nodes.forEach(n => {
+		
+	});
+	const response = await fetch(request + "/image/" + "1")
 	if(response.status== 200){
 		await response.url.then(url => {
 			return url
