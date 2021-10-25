@@ -1,5 +1,9 @@
 var stage
 var layer
+
+var selectedColor
+var nonSelectedColor
+
 function konvaInit() {
     stage = new Konva.Stage({
         container: 'container',
@@ -9,14 +13,8 @@ function konvaInit() {
 
     layer = new Konva.Layer();
     stage.add(layer);
-
-    const circle1 = new Konva.Circle({
-        radius: 40,
-        fill: Konva.Util.getRandomColor(),
-        draggable: true
-    });
-    layer.add(circle1)
-
+    selectedColor = Konva.Util.getRGB('rgb(0,255,0)');
+    nonSelectedColor = Konva.Util.getRGB('rgb(255,0,0)');
 }
 
 function konvaDrawNodes(nodes) {
@@ -46,29 +44,54 @@ function konvaUpdate(nodes, links) {
         if (typeof line == 'undefined') {
             line = newLine(link);
         }
-        line.points([link.target.x, link.target.y, 
-           link.source.x, link.source.y]);
+        line.moveToBottom()
+        line.points([link.target.x, link.target.y,
+        link.source.x, link.source.y]);
     };
+    updateSelectedIconImage()
 }
 
 function newCircle(node) {
     var circle = new Konva.Circle({
         radius: 30,
-        fill: Konva.Util.getRandomColor(),
         name: 'node-' + node.id,
-        draggable: true
+        draggable: true,
+        id: node.id,
+        fillPatternRepeat: 'no-repeat',
+        stroke: 'blue',
+        strokeWidth: 4
     });
     circle.on('dragmove', () => {
-      node.x = circle.x(),
-      node.y = circle.y(),
-      node.fx = circle.x(),
-      node.fy = circle.y();
+        node.x = circle.x(),
+            node.y = circle.y(),
+            node.fx = circle.x(),
+            node.fy = circle.y();
     })
     circle.on('dragmove', () => {
-      //force.resume();
+        //force.resume();
     })
+    circle.on('click', () => {
+        selectNode(node),
+        updateSelectedNode();
+    })
+    circle.on('dblclick dbltap', () => {
+        doubleClicked(node),
+        updateSelectedNode();
+    })
+    loadIconImage(circle)
     layer.add(circle)
     return circle;
+}
+
+function updateSelectedNode() {
+    var list = layer.find('Circle')
+    list.forEach(circle => {
+        if (circle.id() == selectedId) {
+            circle.stroke('green')
+        } else {
+            circle.stroke('blue')
+        }
+    })
 }
 function newLine(link) {
     var line = new Konva.Line({
@@ -84,6 +107,40 @@ function konvaDrawLayer() {
     layer.draw()
 }
 
+function updateSelectedIconImage(){
+    if(selectedId >= 0){
+        var circle = layer.findOne('.node-' + selectedId);
+        loadIconImage(circle);
+    }
+}
+
+function loadIconImage(circle) {
+    var imageObj = new Image();
+    imageObj.onload = function () {
+        circle.fillPatternImage(imageObj);
+        circle.fillPatternScale({ x: circle.radius() * 2 / imageObj.width, y: circle.radius() * 2 / imageObj.height })
+        circle.fillPatternOffset({ x: circle.width() * 5, y: circle.width() * 5 })
+        circle.draw();
+    }
+    imageObj.src = getIconImageURL(circle.id());
+}
+
+// var konvaObject = new Konva.Circle({
+//     x: 100,
+//     y: 100,
+//     radius: 300,
+//     stroke: this.color,
+//     strokeWidth: 6,
+//     fillPatternRepeat: 'no-repeat',
+// });
+
+// // load the image into the shape:
+// var imageObj = new Image();
+// imageObj.onload = function () {
+//     konvaObject.fillPatternImage(imageObj);
+//     konvaObject.draw();
+// }
+// imageObj.src = 'www.demo.com/anImageName.png';
 
 // dataset.edges.forEach((edge, i) => {
 //     const line = new Konva.Line({

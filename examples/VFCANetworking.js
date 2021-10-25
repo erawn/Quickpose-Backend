@@ -23,7 +23,6 @@ const updatePositionData = async (url, positions) => {
 	});
 
 }
-var selectedId = -1
 const requestCurrentId = async (url) => {
 	const response = await fetch(url+'/currentVersion');
 	const id = await response.json();
@@ -43,8 +42,8 @@ const requestData = async (url) => {
     });
 }
 
-function getIconImage(node){
-	return request + "/image/" + node.id;
+function getIconImageURL(id){
+	return request + "/image/" + id + "?" + ((new Date()).getTime());
 	const response = fetch(request + "/image/" + node.id);
 	// if(response.status== 200){
 	// 	return response.url;

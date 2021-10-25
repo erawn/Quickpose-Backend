@@ -35,6 +35,8 @@
     var nodes = [...baseNodes]
     var links = [...baseLinks]
 
+    var selectedId = -1
+
     function isNeighborLink(node, link) {
       return link.target.id === node.id || link.source.id === node.id
     }
@@ -99,18 +101,7 @@
     })
 
 
-    function selectNode(selectedNode) {
-      selectedId = selectedNode.id
-      sendSelect(selectedNode.id);
-      textElements.attr('fill', function (node) { return getTextColor(node) })
-    }
-    function doubleClicked(selectedNode) {
-      selectedId = undefined
-      sendFork(selectedNode.id).then(childId => {
-        update()
-      })
-      textElements.attr('fill', function (node) { return getTextColor(node) })
-    }
+   
 
     
 
@@ -199,9 +190,10 @@
           .attr('y1', function (link) { return link.source.y })
           .attr('x2', function (link) { return link.target.x })
           .attr('y2', function (link) { return link.target.y })
-        nodeElements.attr("xlink:href", function (node) { return getIconImage({ id: -1 }) });
-        nodeElements.attr("xlink:href", function (node) { return getIconImage(node) });
+        nodeElements.attr("xlink:href", function (node) { return getIconImageURL({ id: -1 }) });
+        nodeElements.attr("xlink:href", function (node) { return getIconImageURL(node) });
         graphicsUpdate();
+        textElements.attr('fill', function (node) { return getTextColor(node) })
       })
 
       simulation.force('link').links(links)

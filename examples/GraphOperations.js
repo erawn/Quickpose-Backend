@@ -1,33 +1,33 @@
 
-function resetData(nodes,baseNodes) {
+function resetData(nodes, baseNodes) {
     var nodeIds = nodes.map(function (node) { return node.id })
     baseNodes.forEach(function (node) {
-      if (nodeIds.indexOf(node.id) === -1) {
-        nodes.push(node)
-      }
+        if (nodeIds.indexOf(node.id) === -1) {
+            nodes.push(node)
+        }
     })
     return nodes
-  }
+}
 
-function updateNodes(input_nodes,nodes){
+function updateNodes(input_nodes, nodes) {
     var newIndicies = [];
     var oldIndicies = [];
-    for (i = 0; i < input_nodes.length; i++){
+    for (i = 0; i < input_nodes.length; i++) {
         newIndicies.push(input_nodes[i].id);
     }
-    for (i = 0; i < nodes.length; i++){
+    for (i = 0; i < nodes.length; i++) {
         oldIndicies.push(nodes[i].id);
-        
+
     }
-    for (i = 0; i < nodes.length; i++){
-        if(!newIndicies.includes(nodes[i].id)){
-            nodes.splice(i,1);
+    for (i = 0; i < nodes.length; i++) {
+        if (!newIndicies.includes(nodes[i].id)) {
+            nodes.splice(i, 1);
             changed = true;
         }
     }
 
-    for (i = 0; i < input_nodes.length; i++){
-        if(!oldIndicies.includes(input_nodes[i].id)){
+    for (i = 0; i < input_nodes.length; i++) {
+        if (!oldIndicies.includes(input_nodes[i].id)) {
             baseNodes.push(input_nodes[i]); //TODO: fix this???
             changed = true;
         }
@@ -35,26 +35,26 @@ function updateNodes(input_nodes,nodes){
     return nodes;
 }
 
-function updateLinks(links,baseNodes){
+function updateLinks(links, baseNodes) {
 
     var linksCopy = links
     var nodesCopy = [];
-		for (i = 0; i < baseNodes.length; i++){
-			nodesCopy.push(baseNodes[i].id);
-		}
+    for (i = 0; i < baseNodes.length; i++) {
+        nodesCopy.push(baseNodes[i].id);
+    }
 
-    for(i = 0; i < links.length; i++){
-			
+    for (i = 0; i < links.length; i++) {
+
         var source = linksCopy[i].source;
         var target = linksCopy[i].target;
-        
+
         var sourceInd = nodesCopy.indexOf(source);
         var targetInd = nodesCopy.indexOf(target);
 
-        if(sourceInd == -1){
+        if (sourceInd == -1) {
             sourceInd = 0;
         }
-        if(targetInd == -1){
+        if (targetInd == -1) {
             targetInd = 0;
         }
         links[i].source = baseNodes[sourceInd];
@@ -63,22 +63,33 @@ function updateLinks(links,baseNodes){
 
     return links
 }
+function selectNode(selectedNode) {
+    selectedId = selectedNode.id
+    sendSelect(selectedNode.id);
+}
 
-function updatePositions(){
-    	// var positions = {};
-	// var pos = [];
-	// positions.pos = pos;
-	
-	// for (i = 0; i < nodes.length; i++){
-	// 	var n = nodes[i];
-	// 	var node = {
-	// 		"id": n.id,
-	// 		"x": n.x,
-	// 		"y": n.y
-	// 	}
-	// 	positions.pos.push(node);
-	// }
+function doubleClicked(selectedNode) {
+    selectedId = undefined
+    sendFork(selectedNode.id).then(childId => {
+        update()
+    }) //TODO - select newly created child on fork
+}
 
-	//updatePositionData(request,JSON.stringify(positions));
+function updatePositions() {
+    // var positions = {};
+    // var pos = [];
+    // positions.pos = pos;
+
+    // for (i = 0; i < nodes.length; i++){
+    // 	var n = nodes[i];
+    // 	var node = {
+    // 		"id": n.id,
+    // 		"x": n.x,
+    // 		"y": n.y
+    // 	}
+    // 	positions.pos.push(node);
+    // }
+
+    //updatePositionData(request,JSON.stringify(positions));
 
 }
