@@ -168,7 +168,13 @@
       textElements = textEnter.merge(textElements)
     }
 
-    konvaInit();
+    function doubleClicked(selectedNode) {
+    selectedId = -1
+    sendFork(selectedNode.id).then(function(id){
+        console.log(id)
+        selectedId = id
+    }); //Java Side already selects new child as active version after fork
+}
 
     function updateSimulation() {
       updateGraph()
@@ -198,22 +204,25 @@
 
       simulation.force('link').links(links)
     }
-
- 
    
+    var runOnceOnDataLoad = false
     function update() {
       requestData(request);
       updatePositions(); //TODO
       if (data != null) {
-        requestCurrentId(request);
+        if(!runOnceOnDataLoad){
+          requestCurrentId(request).then(function(id){
+            selectedId = id
+            runOnceOnDataLoad = true
+          });
+        }
         nodes = updateNodes(data[0], nodes)
         links = updateLinks(data[1], baseNodes)
         nodes = resetData(nodes,baseNodes); //TODO: Figure out how to get rid of this??
-    
         document.getElementById("testText").innerHTML = "Loaded";
       }
       updateSimulation();
-      setTimeout(update, 100);
+      
 
     }
 
@@ -222,7 +231,14 @@
       konvaDrawLayer();
     }
 
-    update();
+    
+    function loop(){
+      update();
+      setTimeout(loop, 100);
+    }
+
+    konvaInit();
+    loop()
     
 
 

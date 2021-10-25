@@ -68,12 +68,7 @@ function selectNode(selectedNode) {
     sendSelect(selectedNode.id);
 }
 
-function doubleClicked(selectedNode) {
-    selectedId = undefined
-    sendFork(selectedNode.id).then(childId => {
-        update()
-    }) //TODO - select newly created child on fork
-}
+
 
 function updatePositions() {
     // var positions = {};

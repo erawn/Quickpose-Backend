@@ -49,6 +49,7 @@ function konvaUpdate(nodes, links) {
         link.source.x, link.source.y]);
     };
     updateSelectedIconImage()
+    updateSelectedNode()
 }
 
 function newCircle(node) {
@@ -110,7 +111,10 @@ function konvaDrawLayer() {
 function updateSelectedIconImage(){
     if(selectedId >= 0){
         var circle = layer.findOne('.node-' + selectedId);
-        loadIconImage(circle);
+        if (typeof circle !== 'undefined'){
+            loadIconImage(circle);
+        }
+        
     }
 }
 

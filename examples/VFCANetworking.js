@@ -1,13 +1,8 @@
 var request = 'http://127.0.0.1:8080';
 
 const sendFork = async (id) => {
-	return await fetch(request + '/fork/' + id)
-	.then(function(response){
-		var resp = response.json()
-		return resp;
-	}).then(function(id){
-		return id;
-	})
+	const response = await fetch(request + '/fork/' + id)
+	return await response.json();
 	
 }
 const sendSelect = async (id) => {
@@ -44,7 +39,7 @@ const requestData = async (url) => {
 
 function getIconImageURL(id){
 	return request + "/image/" + id + "?" + ((new Date()).getTime());
-	const response = fetch(request + "/image/" + node.id);
+	//const response = fetch(request + "/image/" + node.id);
 	// if(response.status== 200){
 	// 	return response.url;
 	// }
