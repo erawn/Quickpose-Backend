@@ -38,7 +38,7 @@ const requestData = async (url) => {
 }
 
 function getIconImageURL(id){
-	return request + "/image/" + id + "?" + ((new Date()).getTime());
+	return request + "/image/" + id + "?" + ((new Date()).getTime()); //Add Time to avoid Caching so images update properly
 	//const response = fetch(request + "/image/" + node.id);
 	// if(response.status== 200){
 	// 	return response.url;

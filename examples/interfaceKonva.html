@@ -23,10 +23,16 @@
   <script src="GraphOperations.js"></script>
   <script src="konvaDrawing.js"></script>
 
-
   <div id="container"></div>
-  <svg width="100" height="100"></svg>
+  <!-- <svg width="100" height="100"></svg> -->
   <script>
+
+document.addEventListener('keypress', logKey);
+
+function logKey(e) {
+  savePositions()
+}
+
 
 
     //D3 --------------------------
@@ -101,9 +107,26 @@
     })
 
 
-   
+    function savePositions() {
+      console.log("saving positions!")
+      var positions = {};
 
-    
+      for (i = 0; i < nodes.length; i++) {
+        var n = nodes[i];
+        var node = {
+          "id": n.id,
+          "x": n.x,
+          "y": n.y
+        }
+        positions[n.id] = node;
+      }
+      console.log(positions)
+      updatePositionData(request, positions);
+
+    }
+
+
+
 
     function updateGraph() {
       // links
@@ -169,12 +192,12 @@
     }
 
     function doubleClicked(selectedNode) {
-    selectedId = -1
-    sendFork(selectedNode.id).then(function(id){
+      selectedId = -1
+      sendFork(selectedNode.id).then(function (id) {
         console.log(id)
         selectedId = id
-    }); //Java Side already selects new child as active version after fork
-}
+      }); //Java Side already selects new child as active version after fork
+    }
 
     function updateSimulation() {
       updateGraph()
@@ -196,50 +219,59 @@
           .attr('y1', function (link) { return link.source.y })
           .attr('x2', function (link) { return link.target.x })
           .attr('y2', function (link) { return link.target.y })
-        nodeElements.attr("xlink:href", function (node) { return getIconImageURL({ id: -1 }) });
-        nodeElements.attr("xlink:href", function (node) { return getIconImageURL(node) });
-        graphicsUpdate();
-        textElements.attr('fill', function (node) { return getTextColor(node) })
       })
 
       simulation.force('link').links(links)
     }
-   
+
     var runOnceOnDataLoad = false
     function update() {
+
+      updateSimulation();
+
+
+    }
+
+    function updateData() {
       requestData(request);
-      updatePositions(); //TODO
+      //savePositions(); //TODO
       if (data != null) {
-        if(!runOnceOnDataLoad){
-          requestCurrentId(request).then(function(id){
+        if (!runOnceOnDataLoad) {
+          requestCurrentId(request).then(function (id) {
             selectedId = id
             runOnceOnDataLoad = true
           });
+          restorePositions(); //TODO
         }
         nodes = updateNodes(data[0], nodes)
         links = updateLinks(data[1], baseNodes)
-        nodes = resetData(nodes,baseNodes); //TODO: Figure out how to get rid of this??
+        nodes = resetData(nodes, baseNodes); //TODO: Figure out how to get rid of this??
         document.getElementById("testText").innerHTML = "Loaded";
       }
+      updateSelectedIconImage()
+    }
+
+    function graphicsUpdate() {
       updateSimulation();
-      
-
-    }
-
-    function graphicsUpdate(){
-      konvaUpdate(nodes,links);
+      konvaUpdate(nodes, links);
       konvaDrawLayer();
+      setTimeout(graphicsUpdate, 4)
     }
 
-    
-    function loop(){
+    function loop() {
       update();
       setTimeout(loop, 100);
     }
 
+    function dataLoop() {
+      updateData()
+      setTimeout(updateData, 500)
+    }
+
     konvaInit();
-    loop()
-    
+    // loop()
+    dataLoop();
+    graphicsUpdate();
 
 
   </script>

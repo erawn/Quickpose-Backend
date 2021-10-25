@@ -204,6 +204,7 @@ public class VCFA implements Tool {
 	  });
 	  post("/positions.json", (request, response) -> {
 		  response.type("application/json");
+		  System.out.println(request.body());
 		  updatePositions(request.body());
 		  return "Success";
 	  });

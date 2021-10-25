@@ -48,7 +48,6 @@ function konvaUpdate(nodes, links) {
         line.points([link.target.x, link.target.y,
         link.source.x, link.source.y]);
     };
-    updateSelectedIconImage()
     updateSelectedNode()
 }
 
@@ -124,7 +123,6 @@ function loadIconImage(circle) {
         circle.fillPatternImage(imageObj);
         circle.fillPatternScale({ x: circle.radius() * 2 / imageObj.width, y: circle.radius() * 2 / imageObj.height })
         circle.fillPatternOffset({ x: circle.width() * 5, y: circle.width() * 5 })
-        circle.draw();
     }
     imageObj.src = getIconImageURL(circle.id());
 }

@@ -70,21 +70,8 @@ function selectNode(selectedNode) {
 
 
 
-function updatePositions() {
-    // var positions = {};
-    // var pos = [];
-    // positions.pos = pos;
 
-    // for (i = 0; i < nodes.length; i++){
-    // 	var n = nodes[i];
-    // 	var node = {
-    // 		"id": n.id,
-    // 		"x": n.x,
-    // 		"y": n.y
-    // 	}
-    // 	positions.pos.push(node);
-    // }
+function restorePositions(){
 
-    //updatePositionData(request,JSON.stringify(positions));
 
 }
