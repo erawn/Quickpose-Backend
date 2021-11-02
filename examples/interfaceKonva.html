@@ -1,30 +1,31 @@
 <html>
 
 <head>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.6.0/font/bootstrap-icons.css">
+  <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.6.0/font/bootstrap-icons.css"> -->
 
-  <meta name="viewport" content="width=device-width, 
+  <!-- <meta name="viewport" content="width=device-width, 
         initial-scale=1.0, 
-        user-scalable=yes" />
+        user-scalable=yes" /> -->
   <title>Visual Version Control for Processing</title>
-
+  <meta charset="utf-8" />
   <style>
-
+    #container {
+      overflow: hidden;
+      margin: 0px;
+      border: 1px solid grey;
+    }
   </style>
 </head>
 
 <body>
-  <p id="testText"> Loading</p>
 
+  <div id="container"></div>
 
   <script src="https://d3js.org/d3.v4.min.js"></script>
   <script src="https://unpkg.com/konva@8/konva.min.js"></script>
   <script src="VFCANetworking.js"></script>
   <script src="GraphOperations.js"></script>
   <script src="konvaDrawing.js"></script>
-
-  <div id="container"></div>
-  <!-- <svg width="100" height="100"></svg> -->
   <script>
 
 document.addEventListener('keypress', logKey);
@@ -246,7 +247,7 @@ function logKey(e) {
         nodes = updateNodes(data[0], nodes)
         links = updateLinks(data[1], baseNodes)
         nodes = resetData(nodes, baseNodes); //TODO: Figure out how to get rid of this??
-        document.getElementById("testText").innerHTML = "Loaded";
+        //document.getElementById("testText").innerHTML = "Loaded";
       }
       updateSelectedIconImage()
     }
@@ -269,6 +270,7 @@ function logKey(e) {
     }
 
     konvaInit();
+    
     // loop()
     dataLoop();
     graphicsUpdate();
