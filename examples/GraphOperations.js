@@ -28,7 +28,7 @@ function updateNodes(input_nodes, nodes) {
 
     for (i = 0; i < input_nodes.length; i++) {
         if (!oldIndicies.includes(input_nodes[i].id)) {
-            baseNodes.push(input_nodes[i]); //TODO: fix this???
+            nodes.push(input_nodes[i]);
             changed = true;
         }
     }

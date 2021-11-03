@@ -23,6 +23,7 @@
 
   <script src="https://d3js.org/d3.v4.min.js"></script>
   <script src="https://unpkg.com/konva@8/konva.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
   <script src="VFCANetworking.js"></script>
   <script src="GraphOperations.js"></script>
   <script src="konvaDrawing.js"></script>
@@ -226,14 +227,7 @@ function logKey(e) {
     }
 
     var runOnceOnDataLoad = false
-    function update() {
-
-      updateSimulation();
-
-
-    }
-
-    function updateData() {
+    function updateData() { 
       requestData(request);
       //savePositions(); //TODO
       if (data != null) {
@@ -244,9 +238,15 @@ function logKey(e) {
           });
           restorePositions(); //TODO
         }
+        if(_.isEqual(oldData,data)){
+          console.log('same')
+        }else{
+          console.log('different')
+        }
+      
         nodes = updateNodes(data[0], nodes)
-        links = updateLinks(data[1], baseNodes)
-        nodes = resetData(nodes, baseNodes); //TODO: Figure out how to get rid of this??
+        links = updateLinks(data[1], nodes)
+        
         //document.getElementById("testText").innerHTML = "Loaded";
       }
       updateSelectedIconImage()
@@ -256,22 +256,16 @@ function logKey(e) {
       updateSimulation();
       konvaUpdate(nodes, links);
       konvaDrawLayer();
-      setTimeout(graphicsUpdate, 4)
-    }
-
-    function loop() {
-      update();
-      setTimeout(loop, 100);
+      setTimeout(graphicsUpdate, 10)
     }
 
     function dataLoop() {
       updateData()
-      setTimeout(updateData, 500)
+      setTimeout(dataLoop, 500)
     }
 
     konvaInit();
-    
-    // loop()
+  
     dataLoop();
     graphicsUpdate();
 

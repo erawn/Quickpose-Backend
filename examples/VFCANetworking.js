@@ -29,11 +29,13 @@ const requestCurrentId = async (url) => {
  	
 }
 
+var oldData = null
 var data = null
 const requestData = async (url) => {
 	const response = await fetch(url+'/versions.json');
 	await response.json().then(json => {
-        data = json
+		oldData = _.cloneDeep(data)
+		data = json
     });
 }
 
