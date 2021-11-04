@@ -123,7 +123,8 @@ function newText(node) {
 
         textarea.addEventListener('keydown', function (e) {
           // hide on enter
-          if (e.keyCode === 13) {
+          console.log(e.key)
+          if (e.key === 'Enter') {
             textNode.text(textarea.value);
             document.body.removeChild(textarea);
           }
