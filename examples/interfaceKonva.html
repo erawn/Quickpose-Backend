@@ -29,12 +29,15 @@
   <script src="konvaDrawing.js"></script>
   <script>
 
-document.addEventListener('keypress', logKey);
+document.addEventListener('keypress', function(event) {
+  event.preventDefault();
+  console.log(event.altKey);
+  if (event.key === 's' && event.altKey){
+    
+    savePositions()
+  }
 
-function logKey(e) {
-  savePositions()
-}
-
+});
 
 
     //D3 --------------------------
@@ -226,29 +229,37 @@ function logKey(e) {
       simulation.force('link').links(links)
     }
 
-    var runOnceOnDataLoad = false
-    function updateData() { 
-      requestData(request);
+    var hasDataLoadedOnce = false
+    function updateData() {
+      requestData(request)
+        .then(function (result) {
+          if (data != null) {
+            if (!hasDataLoadedOnce) {
+              requestCurrentId(request).then(function (id) {
+                selectedId = id
+                hasDataLoadedOnce = true
+              });
+              restorePositions(); //TODO
+            }
+            if (_.isEqual(oldData, data)) { //TODO
+              console.log('same')
+            } else {
+              console.log('different')
+            }
+
+            nodes = updateNodes(data[0], nodes)
+            links = updateLinks(data[1], nodes)
+
+            //document.getElementById("testText").innerHTML = "Loaded";
+          }
+        })
+        .catch(() => {
+          console.log('error requesting data')
+
+        });
+
       //savePositions(); //TODO
-      if (data != null) {
-        if (!runOnceOnDataLoad) {
-          requestCurrentId(request).then(function (id) {
-            selectedId = id
-            runOnceOnDataLoad = true
-          });
-          restorePositions(); //TODO
-        }
-        if(_.isEqual(oldData,data)){
-          console.log('same')
-        }else{
-          console.log('different')
-        }
-      
-        nodes = updateNodes(data[0], nodes)
-        links = updateLinks(data[1], nodes)
-        
-        //document.getElementById("testText").innerHTML = "Loaded";
-      }
+
       updateSelectedIconImage()
     }
 
@@ -261,7 +272,7 @@ function logKey(e) {
 
     function dataLoop() {
       updateData()
-      setTimeout(dataLoop, 500)
+      setTimeout(dataLoop, hasDataLoadedOnce ? 500 : 2000) //slow down data requests if processing isn't loaded
     }
 
     konvaInit();

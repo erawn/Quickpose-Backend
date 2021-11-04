@@ -32,11 +32,12 @@ const requestCurrentId = async (url) => {
 var oldData = null
 var data = null
 const requestData = async (url) => {
-	const response = await fetch(url+'/versions.json');
+	const response = await fetch(url + '/versions.json');
 	await response.json().then(json => {
 		oldData = _.cloneDeep(data)
 		data = json
-    });
+	});
+	
 }
 
 function getIconImageURL(id){

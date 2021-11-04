@@ -45,26 +45,35 @@ function konvaInit() {
     nonSelectedColor = Konva.Util.getRGB('rgb(255,0,0)');
 }
 
-function konvaDrawNodes(nodes) {
-    for (i = 0; i < nodes.length; i++) {
-        node = nodes[i]
-        console.log(n.id)
-        const circle = newCircle(node);
+// function konvaDrawNodes(nodes) {
+//     for (i = 0; i < nodes.length; i++) {
+//         node = nodes[i]
+//         console.log(n.id)
+//         const circle = newCircle(node);
+//         const label = new
+//         layer.add(circle);
+//     }
+// }
 
-        layer.add(circle);
-    }
-}
-
+var labelOffsetX = 2
+var labelOffsetY = 5
 function konvaUpdate(nodes, links) {
     for (i = 0; i < nodes.length; i++) {
         var node = nodes[i]
         var circle = layer.findOne('.node-' + node.id);
+        var label = layer.findOne('.label-' + node.id);
         if (typeof circle == 'undefined') {
             circle = newCircle(node);
         }
+        if (typeof label == 'undefined') {
+            label = newText(node);
+        }
+        
         //console.log(circle)
         circle.x(node.x);
         circle.y(node.y);
+        label.x(node.x + labelOffsetX);
+        label.y(node.y + labelOffsetY);
     };
     for (i = 0; i < links.length; i++) {
         var link = links[i];
@@ -78,7 +87,50 @@ function konvaUpdate(nodes, links) {
     };
     updateSelectedNode()
 }
+function newText(node) {
+    var textNode = new Konva.Text({
+        x: 10,
+        y: 15,
+        text: 'Node ' + node.id,
+        name: 'label-' + node.id,
+        fontSize: 30,
+        fontFamily: 'Calibri',
+        fill: 'green'
+      });
+      layer.add(textNode)
 
+      //https://konvajs.org/docs/sandbox/Editable_Text.html
+      textNode.on('dblclick dbltap', () => {
+
+        var textPosition = textNode.getAbsolutePosition();
+        var stageBox = stage.container().getBoundingClientRect();
+
+        var areaPosition = {
+          x: stageBox.left + textPosition.x,
+          y: stageBox.top + textPosition.y,
+        };
+
+        var textarea = document.createElement('textarea');
+        document.body.appendChild(textarea);
+
+        textarea.value = textNode.text();
+        textarea.style.position = 'absolute';
+        textarea.style.top = areaPosition.y + 'px';
+        textarea.style.left = areaPosition.x + 'px';
+        textarea.style.width = textNode.width();
+
+        textarea.focus();
+
+        textarea.addEventListener('keydown', function (e) {
+          // hide on enter
+          if (e.keyCode === 13) {
+            textNode.text(textarea.value);
+            document.body.removeChild(textarea);
+          }
+        });
+      });
+      return textNode
+}
 function newCircle(node) {
     var circle = new Konva.Circle({
         radius: 30,
