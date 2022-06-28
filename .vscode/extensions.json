@@ -1,5 +1,6 @@
 {
     "recommendations": [
-        "nickheap.vscode-ant"
+        "nickheap.vscode-ant",
+        "rioj7.command-variable"
     ]
 }
