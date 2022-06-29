@@ -215,7 +215,7 @@ public class VCFA implements Tool {
           return "Success";
       });
       post("/tldrfile", (request, response) -> {
-          File tempFile = new File(versionsCode.toPath()+"/quickpose.tldr"); //(versionsCode.toPath(), "quickpose","tldr");
+          File tempFile = new File(versionsCode.toPath()+"/quickpose.tldr");
           
           request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));	
           try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { // getPart needs to use same "name" as input field in form
@@ -223,6 +223,21 @@ public class VCFA implements Tool {
             } 
           logInfo(request, tempFile.toPath());
           return "Success";
+      });
+      get("/tldrfile", (request, response) -> {
+        File f = new File(versionsCode.toPath()+"/quickpose.tldr");
+        if(f.exists()){
+            try (OutputStream out = response.raw().getOutputStream()) {
+                response.header("Content-Disposition", "filename=quickpose.tldr");
+                Files.copy(f.toPath(), out);
+                out.flush();
+                response.status(200);
+                return response;
+            }
+        }else{
+            response.status(201);
+            return response;
+        }
       });
       get("/image/:id", (request, response) -> {
         File f = new File(versionsCode.getAbsolutePath() + "/_" + request.params(":id") + "/render.png");
