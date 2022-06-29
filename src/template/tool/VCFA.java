@@ -215,13 +215,13 @@ public class VCFA implements Tool {
           return "Success";
       });
       post("/tldrfile", (request, response) -> {
-          Path tempFile = Files.createTempFile(versionsCode.toPath(), "","");
+          File tempFile = new File(versionsCode.toPath()+"/quickpose.tldr"); //(versionsCode.toPath(), "quickpose","tldr");
           
           request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));	
           try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { // getPart needs to use same "name" as input field in form
-                Files.copy(input, tempFile, StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(input, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
             } 
-          logInfo(request, tempFile);
+          logInfo(request, tempFile.toPath());
           return "Success";
       });
       get("/image/:id", (request, response) -> {
