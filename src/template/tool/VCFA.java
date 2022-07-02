@@ -81,6 +81,7 @@ public class VCFA implements Tool {
   Base base;
   boolean setup = false; 
   private File sketchFolder;
+  private File assetsFolder;
   private File versionsCode;
   private File versionsImages;
   private File versionsTree;
@@ -208,6 +209,10 @@ public class VCFA implements Tool {
           //System.out.println("Current ID Request :" + currentVersion);
           return currentVersion;
       });
+      get("/projectName", (request, response) -> {
+        //System.out.println("Current ID Request :" + currentVersion);
+        return sketchFolder.getName();
+      });
       post("/positions.json", (request, response) -> {
           response.type("application/json");
           System.out.println(request.body());
@@ -216,12 +221,11 @@ public class VCFA implements Tool {
       });
       post("/tldrfile", (request, response) -> {
           File tempFile = new File(versionsCode.toPath()+"/quickpose.tldr");
-          
           request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));	
           try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { // getPart needs to use same "name" as input field in form
                 Files.copy(input, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
             } 
-          logInfo(request, tempFile.toPath());
+          //logInfo(request, tempFile.toPath());
           return "Success";
       });
       get("/tldrfile", (request, response) -> {
@@ -256,6 +260,32 @@ public class VCFA implements Tool {
             return response;
         }
       });
+      get("/assets/*", (request, response) -> {
+        File f = new File(assetsFolder.getAbsolutePath()+"/"+request.splat()[0]);
+        if(f.exists()){
+            response.status(200);
+        }else{
+            response.status(201);
+            f = new File(sketchFolder.getParentFile().getAbsolutePath() + "/tools/VCFA/examples/noicon.png");
+        }
+
+        try (OutputStream out = response.raw().getOutputStream()) {
+            response.header("Content-Disposition", "inline; filename="+request.params(":name"));
+            Files.copy(f.toPath(), out);
+            out.flush();
+            
+            return response;
+        }
+      });
+      put("/assets/*", (request, response) -> {
+        File tempFile = new File(assetsFolder.getAbsolutePath()+"/"+request.splat()[0]);
+        request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));	
+        try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { // getPart needs to use same "name" as input field in form
+              Files.copy(input, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+          } 
+        logInfo(request, tempFile.toPath());
+        return "Success";
+    });
       
   }
   private static void logInfo(Request req, Path tempFile) throws IOException, ServletException {
@@ -275,6 +305,8 @@ public class VCFA implements Tool {
       String sketchPath = sketchFolder.getAbsolutePath();
       versionsCode = new File(sketchPath+"/"+"versions_code");
       versionsCode.mkdir();
+      assetsFolder = new File(versionsCode.toPath()+"/"+"assets");
+      assetsFolder.mkdir();
       
       if(editor.getMode().getIdentifier() == "jm.mode.replmode.REPLMode") {
              System.out.println("Running in REPL Mode");
