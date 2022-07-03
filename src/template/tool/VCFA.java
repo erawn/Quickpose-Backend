@@ -203,7 +203,7 @@ public class VCFA implements Tool {
           //System.out.println("Select Node :"+ request.params(":name"));
           currentVersion = Integer.parseInt(request.params(":id"));
           changeActiveVersion(currentVersion);
-          return "Success";
+          return currentVersion;
       });
       get("/currentVersion", (request, response) -> {
           //System.out.println("Current ID Request :" + currentVersion);
@@ -265,8 +265,8 @@ public class VCFA implements Tool {
         if(f.exists()){
             response.status(200);
         }else{
-            response.status(201);
-            f = new File(sketchFolder.getParentFile().getAbsolutePath() + "/tools/VCFA/examples/noicon.png");
+            response.status(404);
+            return response;
         }
 
         try (OutputStream out = response.raw().getOutputStream()) {
@@ -277,18 +277,30 @@ public class VCFA implements Tool {
             return response;
         }
       });
+      delete("/assets/*", (request, response) -> {
+        File f = new File(assetsFolder.getAbsolutePath()+"/"+request.splat()[0]);
+        if(f.exists()){
+            if(f.delete()){
+                response.status(200);
+                System.out.println("deleted file"+f.getAbsolutePath());
+                return response;
+            }
+        }
+        response.status(201);
+        return response;
+      });
       put("/assets/*", (request, response) -> {
         File tempFile = new File(assetsFolder.getAbsolutePath()+"/"+request.splat()[0]);
         request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));	
         try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { // getPart needs to use same "name" as input field in form
               Files.copy(input, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
           } 
-        logInfo(request, tempFile.toPath());
+        logUploadInfo(request, tempFile.toPath());
         return "Success";
     });
       
   }
-  private static void logInfo(Request req, Path tempFile) throws IOException, ServletException {
+  private static void logUploadInfo(Request req, Path tempFile) throws IOException, ServletException {
     System.out.println("Uploaded file '" + getFileName(req.raw().getPart("uploaded_file")) + "' saved as '" + tempFile.toAbsolutePath() + "'");
   }
   private static String getFileName(Part part) {
@@ -347,14 +359,9 @@ public class VCFA implements Tool {
              writeJSONFromRoot();
              return child.id;
          }
-        
-         
-     }else {
-         System.out.println("Attempted Fork: Node Doesn't Exist");
      }
-     
-     return -1;
-     
+    System.out.println("Attempted Fork: Node Doesn't Exist");
+    return -1;
  }
  
  private void saveCurrent() {
@@ -393,7 +400,7 @@ public class VCFA implements Tool {
               }
           }
       }
-     //base.getActiveEditor().getSketch().reload();
+     base.getActiveEditor().getSketch().reload();
      base.getActiveEditor().handleSave(true);
      currentVersion = id;
     // System.out.println("Switched version to "+ id );
