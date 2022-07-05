@@ -6,7 +6,7 @@
         {
             "label": "ant tool.run",
             "type": "shell",
-            "command": "ant -buildfile resources/build.xml tool.run",
+            "command": "(taskkill.exe /IM javaw.exe || true) &&ant -buildfile resources/build.xml tool.run && cd /mnt/c/Users/EricRawn/Documents/processing-3.5.4/ && ./processing.exe",
             "group": {
                 "kind": "build",
                 "isDefault": true
