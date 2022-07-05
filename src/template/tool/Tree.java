@@ -2,8 +2,7 @@ package template.tool;
 
 import java.util.List;
 import org.json.*;
-import java.io.FileWriter;
-import java.io.IOException;
+
 public class Tree {
 
 	public Node root;

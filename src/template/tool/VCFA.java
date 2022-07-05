@@ -42,11 +42,6 @@ import java.io.OutputStream;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.awt.Desktop;
-import java.io.IOException;
-import java.net.URL;
-
-import java.nio.file.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -54,10 +49,9 @@ import java.nio.file.StandardCopyOption;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.http.HttpServletResponse;
+import javax.swing.text.BadLocationException;
 import javax.servlet.*;
 import javax.servlet.http.*;
-import javax.imageio.ImageIO;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -66,12 +60,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import processing.app.Base;
+import processing.app.Mode;
 import processing.app.Sketch;
 import processing.app.SketchCode;
 import processing.app.tools.Tool;
 import processing.app.ui.Editor;
 
-import java.util.Scanner;
 
 // when creating a tool, the name of the main class which implements Tool must
 // be the same as the value defined for project.name in your build.properties
@@ -84,6 +78,7 @@ public class VCFA implements Tool {
     private File versionsImages;
     private File versionsTree;
     private File sketchbookFolder;
+    private SketchCode starterCode;
     public Tree codeTree;
     public int currentVersion;
     public Editor editor;
@@ -104,7 +99,7 @@ public class VCFA implements Tool {
 
     public void run() {
 
-        if (setup == false) {
+        if (true) {
 
             // // FOR TESTING ONLY
             // try {
@@ -145,6 +140,8 @@ public class VCFA implements Tool {
 
     private void GUISetup() {
 
+        
+
         try {
             final File f = new File(this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath());
             System.out.println(f.getParentFile().getPath());
@@ -159,7 +156,6 @@ public class VCFA implements Tool {
     }
 
     private void networkSetup() {
-
         port(serverPort);
         System.out.println("Starting server on port:" + serverPort);
         options("/*",
@@ -325,31 +321,50 @@ public class VCFA implements Tool {
         versionsCode.mkdir();
         assetsFolder = new File(versionsCode.toPath() + "/" + "assets");
         assetsFolder.mkdir();
-
+        File starterCodeFile = new File(Base.getSketchbookToolsFolder().toPath() + "/VCFA/examples/QuickposeDefault.pde");
+       
+        
+        
         if (editor.getMode().getIdentifier() == "jm.mode.replmode.REPLMode") {
             System.out.println("Running in REPL Mode");
         } else {
             System.out.println("Please Run in REPL Mode!");
+            System.out.println(base.getModeList());
+            for (Mode m : base.getModeList()) {
+                if(m.getIdentifier() == "jm.mode.replmode.REPLMode"){
+                    base.changeMode(m);
+                    System.out.println("switched to REPL mode");
+                }
+                
+            }
+
         }
 
         versionsTree = new File(versionsCode.getAbsolutePath() + "/tree.json");
         // System.out.println(versionsTree.getAbsoluteFile());
         // System.out.println(versionsTree.getAbsolutePath());
         if (!versionsTree.exists()) {
-            // System.out.println("No Existing tree.json detected - creating a new verison
-            // history...");
-
-            // System.out.println(editor.getText().isEmpty());
-            if (editor.getText().isEmpty()) {
-                editor.setText("test");
+            System.out.println("No Existing Quickpose Session Detected - creating a new verison history...");
+            if(starterCodeFile.exists()){
+                
             }
-
+            //replaceCode(new SketchCode(new File(folder, filename), ext));
+            if (starterCodeFile.exists() && editor.getText().isEmpty()) {
+                starterCode = new SketchCode(starterCodeFile,".pde");
+                try {
+                    editor.setText(starterCode.getDocumentText());
+                } catch (BadLocationException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+            editor.handleSaveAs();
             String rootFolder = makeVersion(0);
             Data root = new Data(rootFolder);
             codeTree = new Tree(root);
             writeJSONFromRoot();
         } else {
-            // System.out.println("Existing tree.json detected! Reading...");
+            System.out.println("Existing Quickpose Session Found! Loading...");
             readJSONToRoot();
         }
     }
@@ -371,8 +386,9 @@ public class VCFA implements Tool {
     }
 
     private void saveCurrent() {
-        if (codeTree.getNode(currentVersion).children.size() == 0) {
+        if (codeTree.getNode(currentVersion).children.size() == 0 && base.getActiveEditor().getSketch().isModified()) {
             makeVersion(currentVersion);
+            System.out.println();
         } else {
             base.getActiveEditor().handleSave(true);
             base.getActiveEditor().getSketch().getMainFile().setReadOnly();
