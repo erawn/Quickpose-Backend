@@ -28,8 +28,6 @@
 
 package template.tool;
 
-import com.google.gson.Gson;
-
 //import com.fasterxml.jackson.databind.*;
 import spark.*;
 import static spark.Spark.*;
@@ -49,6 +47,9 @@ import java.nio.file.StandardCopyOption;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 import javax.swing.text.BadLocationException;
 import javax.servlet.*;
 import javax.servlet.http.*;
@@ -84,9 +85,10 @@ public class VCFA implements Tool {
     public Editor editor;
     ScheduledExecutorService windowExecutor;
     JSONObject nodePositions;
-    private static Gson gson = new Gson();
     private int serverPort = 8080;
-
+    ScheduledExecutorService executor = null;
+    private long lastModified = 0;
+    private Lock renderLock = new ReentrantLock();
     public String getMenuTitle() {
         return "Version Control for Artists";
     }
@@ -99,30 +101,29 @@ public class VCFA implements Tool {
 
     public void run() {
 
-        if (true) {
-
-            // // FOR TESTING ONLY
-            // try {
-            // FileUtils.deleteDirectory(new
-            // File(base.getActiveEditor().getSketch().getFolder()+"/"+"versions_code"));
-            // }catch(IOException e) {}
-            // //FOR TESTING ONLY
-
-            dataSetup();
+        if (setup == false) {
             networkSetup();
-            GUISetup();
-            Runnable updateLoop = new Runnable() {
-                public void run() {
-                    update();
-                }
-            };
-            ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-            executor.scheduleAtFixedRate(updateLoop, 0, 200, TimeUnit.MILLISECONDS);
-            setup = true;
-        } else {
-            GUISetup();
         }
 
+        // // FOR TESTING ONLY
+        // try {
+        // FileUtils.deleteDirectory(new
+        // File(base.getActiveEditor().getSketch().getFolder()+"/"+"versions_code"));
+        // }catch(IOException e) {}
+        // //FOR TESTING ONLY
+        if(executor != null){
+            executor.shutdownNow();
+        }
+        dataSetup();
+        
+        Runnable updateLoop = new Runnable() {
+            public void run() {
+                update();
+            }
+        };
+        executor = Executors.newScheduledThreadPool(1);
+        executor.scheduleAtFixedRate(updateLoop, 0, 100, TimeUnit.MILLISECONDS);
+        setup = true;
         // System.out.println("Sketch Folder at : " + sketchFolder.getAbsolutePath());
         // System.out.println(editor.getMode().getIdentifier());
 
@@ -134,25 +135,37 @@ public class VCFA implements Tool {
 
     private void update() {
         // check if files are modified first??
-        saveCurrent();
+        File render = new File(sketchFolder.toPath()+"/render.png");
+        File storedRender = new File(versionsCode.getAbsolutePath()+"/_"+currentVersion+"/render.png");
+        boolean fileModified = base.getActiveEditor().getSketch().isModified();
+        boolean renderModified = render.exists() && (!storedRender.exists() || render.lastModified() != storedRender.lastModified());
 
-    }
-
-    private void GUISetup() {
-
-        
-
-        try {
-            final File f = new File(this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath());
-            System.out.println(f.getParentFile().getPath());
-            // File webpage = new File(f.getParentFile().getParentFile().getPath() +
-            // "/examples/interface.html");
-            // System.err.println(webpage.getAbsolutePath());
-            // Desktop.getDesktop().browse(url.toURI());
-        } catch (Exception E) {
-            System.err.println("Exp : " + E.getMessage());
-        }
-
+        if(fileModified){
+            makeVersion(currentVersion,false);
+            lastModified = render.lastModified();
+            System.out.println("saving to version");
+        }else if(renderModified){
+            System.out.println("attempting to save render");
+            File tempRender = new File(versionsCode.getAbsolutePath()+"/_"+currentVersion+"/renderTemp.png");
+            copyFile(render, tempRender);
+            renderLock.lock();
+            try {
+                storedRender.delete();
+                tempRender.renameTo(storedRender);
+            } finally {
+                renderLock.unlock();
+                System.out.println("upload giving up lock");
+            }
+            lastModified = render.lastModified();
+            System.out.println("saving render");
+        }  
+    //     Lock lock = ...; 
+    //     lock.lock();
+    //     try {
+    //         // access to the shared resource
+    //     } finally {
+    //         lock.unlock();
+    //     }
     }
 
     private void networkSetup() {
@@ -247,14 +260,24 @@ public class VCFA implements Tool {
                 response.status(201);
                 f = new File(sketchFolder.getParentFile().getAbsolutePath() + "/tools/VCFA/examples/noicon.png");
             }
-
-            try (OutputStream out = response.raw().getOutputStream()) {
-                response.header("Content-Disposition", "inline; filename=render.png");
-                Files.copy(f.toPath(), out);
-                out.flush();
-
-                return response;
+            if(request.params(":id") == String.valueOf(currentVersion)){
+                renderLock.lock();
+                try (OutputStream out = response.raw().getOutputStream()) {
+                    response.header("Content-Disposition", "inline; filename=render.png");
+                    Files.copy(f.toPath(), out);
+                    out.flush(); 
+                }finally {
+                    renderLock.unlock(); 
+                }
+            }else{
+                try (OutputStream out = response.raw().getOutputStream()) {
+                    response.header("Content-Disposition", "inline; filename=render.png");
+                    Files.copy(f.toPath(), out);
+                    out.flush(); 
+                }
             }
+            
+            return response;
         });
         get("/assets/*", (request, response) -> {
             File f = new File(assetsFolder.getAbsolutePath() + "/" + request.splat()[0]);
@@ -359,7 +382,7 @@ public class VCFA implements Tool {
                 }
             }
             editor.handleSaveAs();
-            String rootFolder = makeVersion(0);
+            String rootFolder = makeVersion(0,false);
             Data root = new Data(rootFolder);
             codeTree = new Tree(root);
             writeJSONFromRoot();
@@ -375,7 +398,7 @@ public class VCFA implements Tool {
             Data data = new Data("");
             if (parent != null) {
                 Node child = parent.addChild(data);
-                child.data.path = makeVersion(child.id);
+                child.data.path = makeVersion(child.id,false);
                 changeActiveVersion(child.id);
                 writeJSONFromRoot();
                 return child.id;
@@ -383,20 +406,6 @@ public class VCFA implements Tool {
         }
         System.out.println("Attempted Fork: Node Doesn't Exist");
         return -1;
-    }
-
-    private void saveCurrent() {
-        if (codeTree.getNode(currentVersion).children.size() == 0 && base.getActiveEditor().getSketch().isModified()) {
-            makeVersion(currentVersion);
-            System.out.println();
-        } else {
-            base.getActiveEditor().handleSave(true);
-            base.getActiveEditor().getSketch().getMainFile().setReadOnly();
-            // base.getActiveEditor().handleSave(true);
-            Sketch currentSketch = base.getActiveEditor().getSketch();
-
-            // fork(currentVersion);
-        }
     }
 
     private void changeActiveVersion(int id) {
@@ -418,13 +427,13 @@ public class VCFA implements Tool {
         File[] versionListing = versionFolder.listFiles();
         if (versionListing != null) {
             for (File f : versionListing) {
-                if (FilenameUtils.isExtension(f.getName(), "pde")) {
+                if (FilenameUtils.isExtension(f.getName(), "pde") || f.getName() == "render.png") {
                     File newFile = new File(sketchFolder.getAbsolutePath() + "/" + f.getName());
                     copyFile(f, newFile);
                 }
             }
         }
-        if (codeTree.getNode(currentVersion).children.size() == 0) {
+        if (codeTree.getNode(id).children.size() == 0) {
             base.getActiveEditor().getSketch().getMainFile().setWritable(true);
         } else {
             base.getActiveEditor().getSketch().getMainFile().setWritable(false);
@@ -435,16 +444,17 @@ public class VCFA implements Tool {
         // System.out.println("Switched version to "+ id );
     }
 
-    private String makeVersion(int id) {
+    private String makeVersion(int id, boolean renderOnly) {
         // base.getActiveEditor().getSketch().reload();
-        // base.getActiveEditor().handleSave(true);
+        
+        base.getActiveEditor().handleSave(true);
         File folder = new File(versionsCode.getAbsolutePath() + "/_" + id);
         folder.mkdir();
         File[] dirListing = sketchFolder.listFiles();
         if (dirListing != null) {
             for (File f : dirListing) {
-                if (FilenameUtils.isExtension(f.getName(), "pde") ||
-                        FilenameUtils.equals(f.getName(), "render.png")) {
+                if (FilenameUtils.equals(f.getName(), "render.png") || 
+                    FilenameUtils.isExtension(f.getName(), "pde")) {
                     File newFile = new File(folder.getAbsolutePath() + "/" + f.getName());
                     copyFile(f, newFile);
                 }
