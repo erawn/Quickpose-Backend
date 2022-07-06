@@ -6,7 +6,8 @@
         {
             "label": "ant tool.run",
             "type": "shell",
-            "command": "(taskkill.exe /IM javaw.exe || true) &&ant -buildfile resources/build.xml tool.run && cd /mnt/c/Users/EricRawn/Documents/processing-3.5.4/ && ./processing.exe",
+            "osx": {"command": "(killall Processing|| true) && ant -buildfile resources/build.xml tool.run && open /Applications/Processing.app"},
+            "linux": {"command": "(taskkill.exe /IM javaw.exe || true) &&ant -buildfile resources/build.xml tool.run && cd /mnt/c/Users/EricRawn/Documents/processing-3.5.4/ && ./processing.exe"},
             "group": {
                 "kind": "build",
                 "isDefault": true
