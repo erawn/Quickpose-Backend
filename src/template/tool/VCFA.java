@@ -368,14 +368,19 @@ public class VCFA implements Tool {
         // System.out.println(versionsTree.getAbsolutePath());
         if (!versionsTree.exists()) {
             System.out.println("No Existing Quickpose Session Detected - creating a new verison history...");
-            if(starterCodeFile.exists()){
-                
-            }
             //replaceCode(new SketchCode(new File(folder, filename), ext));
-            if (starterCodeFile.exists() && editor.getText().isEmpty()) {
+            String currentText = "orig";
+            try {
+                currentText = editor.getSketch().getCode(0).getDocumentText();
+            } catch (BadLocationException e1) {
+                // TODO Auto-generated catch block
+                e1.printStackTrace();
+            }
+            System.out.println("currentText:"+currentText+":");
+            if (starterCodeFile.exists() && currentText == "") {
                 starterCode = new SketchCode(starterCodeFile,".pde");
                 try {
-                    editor.setText(starterCode.getDocumentText());
+                    editor.getSketch();
                 } catch (BadLocationException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
@@ -385,6 +390,7 @@ public class VCFA implements Tool {
             String rootFolder = makeVersion(0);
             Data root = new Data(rootFolder);
             codeTree = new Tree(root);
+            changeActiveVersion(0);
             writeJSONFromRoot();
         } else {
             System.out.println("Existing Quickpose Session Found! Loading...");
