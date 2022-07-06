@@ -141,7 +141,7 @@ public class VCFA implements Tool {
         boolean renderModified = render.exists() && (!storedRender.exists() || render.lastModified() != storedRender.lastModified());
 
         if(fileModified){
-            makeVersion(currentVersion,false);
+            makeVersion(currentVersion);
             lastModified = render.lastModified();
             System.out.println("saving to version");
         }else if(renderModified){
@@ -382,7 +382,7 @@ public class VCFA implements Tool {
                 }
             }
             editor.handleSaveAs();
-            String rootFolder = makeVersion(0,false);
+            String rootFolder = makeVersion(0);
             Data root = new Data(rootFolder);
             codeTree = new Tree(root);
             writeJSONFromRoot();
@@ -395,10 +395,11 @@ public class VCFA implements Tool {
     private int fork(int id) {
         if (codeTree.idExists(id)) {
             Node parent = codeTree.getNode(id);
-            Data data = new Data("");
+            
             if (parent != null) {
+                Data data = new Data("");
                 Node child = parent.addChild(data);
-                child.data.path = makeVersion(child.id,false);
+                child.data.path = makeVersion(child.id);
                 changeActiveVersion(child.id);
                 writeJSONFromRoot();
                 return child.id;
@@ -444,7 +445,7 @@ public class VCFA implements Tool {
         // System.out.println("Switched version to "+ id );
     }
 
-    private String makeVersion(int id, boolean renderOnly) {
+    private String makeVersion(int id) {
         // base.getActiveEditor().getSketch().reload();
         
         base.getActiveEditor().handleSave(true);
