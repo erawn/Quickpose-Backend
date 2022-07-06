@@ -1,9 +1,9 @@
 void setup(){  
-
+  size(600,600); 
 }
 
 void draw(){ 
-  
+  background(0,200,0); 
   
   
   //Tweak however you like, whatever the current "render.png" is in main file will be 

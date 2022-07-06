@@ -61,6 +61,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import org.eclipse.jetty.util.log.Slf4jLog;
+
 import processing.app.Base;
 import processing.app.Language;
 import processing.app.Messages;
@@ -91,6 +93,7 @@ public class VCFA implements Tool {
     ScheduledExecutorService executor = null;
     private long lastModified = 0;
     private Lock renderLock = new ReentrantLock();
+    private Lock tldrLock = new ReentrantLock();
 
     public String getMenuTitle() {
         return "Version Control for Artists";
@@ -103,6 +106,7 @@ public class VCFA implements Tool {
     }
 
     public void run() {
+        // Slf4jLog
         if (base.getActiveEditor().getSketch().isUntitled()) {
             Messages.showMessage("Quickpose: Unsaved Sketch",
                     "Quickpose Can't Run on an Unsaved Sketch, Please Save Sketch and Run Again");
@@ -135,7 +139,7 @@ public class VCFA implements Tool {
             // System.out.println("Sketch Folder at : " + sketchFolder.getAbsolutePath());
             // System.out.println(editor.getMode().getIdentifier());
 
-            editor.getSketch().reload();
+            // editor.getSketch().reload();
 
             System.out.println("##tool.name## ##tool.prettyVersion## by ##author##");
         }
@@ -227,26 +231,40 @@ public class VCFA implements Tool {
             return "Success";
         });
         post("/tldrfile", (request, response) -> {
-            File tempFile = new File(versionsCode.toPath() + "/quickpose.tldr");
-            request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
-            try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { // getPart needs to use
-                                                                                                // same "name" as input
-                                                                                                // field in form
-                Files.copy(input, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            File f = new File(versionsCode.toPath() + "/quickpose.tldr");
+            tldrLock.lock();
+            try {
+                request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
+                try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { // getPart needs to
+                                                                                                    // use
+                                                                                                    // same "name" as
+                                                                                                    // input
+                                                                                                    // field in form
+                    Files.copy(input, f.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                }
+            } finally {
+                tldrLock.unlock();
             }
-            // logInfo(request, tempFile.toPath());
+            // logUploadInfo(request, f.toPath());
             return "Success";
         });
         get("/tldrfile", (request, response) -> {
             File f = new File(versionsCode.toPath() + "/quickpose.tldr");
             if (f.exists()) {
-                try (OutputStream out = response.raw().getOutputStream()) {
-                    response.header("Content-Disposition", "filename=quickpose.tldr");
-                    Files.copy(f.toPath(), out);
-                    out.flush();
-                    response.status(200);
-                    return response;
+                tldrLock.lock();
+                try {
+                    try (OutputStream out = response.raw().getOutputStream()) {
+                        response.header("Content-Disposition", "filename=quickpose.tldr");
+                        Files.copy(f.toPath(), out);
+                        out.flush();
+                        response.status(200);
+                        // System.out.println("Returned tldr");
+                    }
+                } finally {
+                    tldrLock.unlock();
                 }
+                return response;
+
             } else {
                 response.status(201);
                 return response;
@@ -363,18 +381,17 @@ public class VCFA implements Tool {
         versionsTree = new File(versionsCode.getAbsolutePath() + "/tree.json");
         if (!versionsTree.exists()) {
             System.out.println("No Existing Quickpose Session Detected - creating a new verison history...");
-            System.out.println(starterCodeFile.exists());
-            System.out.println(editor.getText().isEmpty());
-
-            if (starterCodeFile.exists() && editor.getText().isEmpty()) {
+            System.out.println(editor.getText().length());
+            if (starterCodeFile.exists() && editor.getText().length() < 10) {
                 try {
-
-                    System.out.println(starterCodeFile.toPath() + ":" + editor.getSketch().getMainFile().toPath());
+                    // System.out.println(starterCodeFile.toPath() + ":" +
+                    // editor.getSketch().getMainFile().toPath());
                     Files.move(starterCodeFile.toPath(), editor.getSketch().getMainFile().toPath(),
                             StandardCopyOption.REPLACE_EXISTING);
                     // base.getActiveEditor().getSketch().updateSketchCodes();
                     base.getActiveEditor().getSketch().reload();
                     editor.handleSave(false);
+                    // base.getActiveEditor().getMode().getToolbarMenu().
                 } catch (IOException e1) {
                     // TODO Auto-generated catch block
                     e1.printStackTrace();
