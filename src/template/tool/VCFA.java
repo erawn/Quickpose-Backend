@@ -37,9 +37,10 @@ import java.io.*;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.OutputStream;
-
+import java.net.URL;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -61,12 +62,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import processing.app.Base;
+import processing.app.Language;
+import processing.app.Messages;
 import processing.app.Mode;
 import processing.app.Sketch;
 import processing.app.SketchCode;
 import processing.app.tools.Tool;
 import processing.app.ui.Editor;
-
 
 // when creating a tool, the name of the main class which implements Tool must
 // be the same as the value defined for project.name in your build.properties
@@ -89,6 +91,7 @@ public class VCFA implements Tool {
     ScheduledExecutorService executor = null;
     private long lastModified = 0;
     private Lock renderLock = new ReentrantLock();
+
     public String getMenuTitle() {
         return "Version Control for Artists";
     }
@@ -100,72 +103,69 @@ public class VCFA implements Tool {
     }
 
     public void run() {
+        if (base.getActiveEditor().getSketch().isUntitled()) {
+            Messages.showMessage("Quickpose: Unsaved Sketch",
+                    "Quickpose Can't Run on an Unsaved Sketch, Please Save Sketch and Run Again");
+            base.getActiveEditor().handleSave(false);
 
-        if (setup == false) {
-            networkSetup();
-        }
-
-        // // FOR TESTING ONLY
-        // try {
-        // FileUtils.deleteDirectory(new
-        // File(base.getActiveEditor().getSketch().getFolder()+"/"+"versions_code"));
-        // }catch(IOException e) {}
-        // //FOR TESTING ONLY
-        if(executor != null){
-            executor.shutdownNow();
-        }
-        dataSetup();
-        
-        Runnable updateLoop = new Runnable() {
-            public void run() {
-                update();
+        } else {
+            if (setup == false) {
+                networkSetup();
             }
-        };
-        executor = Executors.newScheduledThreadPool(1);
-        executor.scheduleAtFixedRate(updateLoop, 0, 100, TimeUnit.MILLISECONDS);
-        setup = true;
-        // System.out.println("Sketch Folder at : " + sketchFolder.getAbsolutePath());
-        // System.out.println(editor.getMode().getIdentifier());
 
-        editor.getSketch().reload();
+            // // FOR TESTING ONLY
+            // try {
+            // FileUtils.deleteDirectory(new
+            // File(base.getActiveEditor().getSketch().getFolder()+"/"+"versions_code"));
+            // }catch(IOException e) {}
+            // //FOR TESTING ONLY
+            if (executor != null) {
+                executor.shutdownNow();
+            }
+            dataSetup();
 
-        System.out.println("##tool.name## ##tool.prettyVersion## by ##author##");
+            Runnable updateLoop = new Runnable() {
+                public void run() {
+                    update();
+                }
+            };
+            executor = Executors.newScheduledThreadPool(1);
+            executor.scheduleAtFixedRate(updateLoop, 0, 100, TimeUnit.MILLISECONDS);
+            setup = true;
+            // System.out.println("Sketch Folder at : " + sketchFolder.getAbsolutePath());
+            // System.out.println(editor.getMode().getIdentifier());
+
+            editor.getSketch().reload();
+
+            System.out.println("##tool.name## ##tool.prettyVersion## by ##author##");
+        }
 
     }
 
     private void update() {
         // check if files are modified first??
-        File render = new File(sketchFolder.toPath()+"/render.png");
-        File storedRender = new File(versionsCode.getAbsolutePath()+"/_"+currentVersion+"/render.png");
+        File render = new File(sketchFolder.toPath() + "/render.png");
+        File storedRender = new File(versionsCode.getAbsolutePath() + "/_" + currentVersion + "/render.png");
         boolean fileModified = base.getActiveEditor().getSketch().isModified();
-        boolean renderModified = render.exists() && (!storedRender.exists() || render.lastModified() != storedRender.lastModified());
+        boolean renderModified = render.exists()
+                && (!storedRender.exists() || render.lastModified() != storedRender.lastModified());
 
-        if(fileModified){
+        if (fileModified) {
             makeVersion(currentVersion);
             lastModified = render.lastModified();
-            System.out.println("saving to version");
-        }else if(renderModified){
-            System.out.println("attempting to save render");
-            File tempRender = new File(versionsCode.getAbsolutePath()+"/_"+currentVersion+"/renderTemp.png");
+        } else if (renderModified) {
+            File tempRender = new File(versionsCode.getAbsolutePath() + "/_" + currentVersion + "/renderTemp.png");
             copyFile(render, tempRender);
+
             renderLock.lock();
             try {
                 storedRender.delete();
                 tempRender.renameTo(storedRender);
             } finally {
                 renderLock.unlock();
-                System.out.println("upload giving up lock");
             }
             lastModified = render.lastModified();
-            System.out.println("saving render");
-        }  
-    //     Lock lock = ...; 
-    //     lock.lock();
-    //     try {
-    //         // access to the shared resource
-    //     } finally {
-    //         lock.unlock();
-    //     }
+        }
     }
 
     private void networkSetup() {
@@ -195,8 +195,8 @@ public class VCFA implements Tool {
 
         // https://stackoverflow.com/questions/47328754/with-java-spark-how-do-i-send-a-html-file-as-a-repsonse
         get("/", (request, response) -> {
-            // response.redirect("interface.html");
-            return "";
+            response.redirect("https://quickpose.vercel.app/");
+            return response;
         });
         get("/versions.json", (request, response) -> {
             response.type("application/json");
@@ -260,23 +260,23 @@ public class VCFA implements Tool {
                 response.status(201);
                 f = new File(sketchFolder.getParentFile().getAbsolutePath() + "/tools/VCFA/examples/noicon.png");
             }
-            if(request.params(":id") == String.valueOf(currentVersion)){
+            if (request.params(":id") == String.valueOf(currentVersion)) {
                 renderLock.lock();
                 try (OutputStream out = response.raw().getOutputStream()) {
                     response.header("Content-Disposition", "inline; filename=render.png");
                     Files.copy(f.toPath(), out);
-                    out.flush(); 
-                }finally {
-                    renderLock.unlock(); 
+                    out.flush();
+                } finally {
+                    renderLock.unlock();
                 }
-            }else{
+            } else {
                 try (OutputStream out = response.raw().getOutputStream()) {
                     response.header("Content-Disposition", "inline; filename=render.png");
                     Files.copy(f.toPath(), out);
-                    out.flush(); 
+                    out.flush();
                 }
             }
-            
+
             return response;
         });
         get("/assets/*", (request, response) -> {
@@ -344,49 +344,43 @@ public class VCFA implements Tool {
         versionsCode.mkdir();
         assetsFolder = new File(versionsCode.toPath() + "/" + "assets");
         assetsFolder.mkdir();
-        File starterCodeFile = new File(Base.getSketchbookToolsFolder().toPath() + "/VCFA/examples/QuickposeDefault.pde");
-       
-        
-        
+        File starterCodeFile = new File(
+                Base.getSketchbookToolsFolder().toPath() + "/VCFA/examples/QuickposeDefault.pde");
+
         if (editor.getMode().getIdentifier() == "jm.mode.replmode.REPLMode") {
             System.out.println("Running in REPL Mode");
         } else {
             System.out.println("Please Run in REPL Mode!");
             System.out.println(base.getModeList());
             for (Mode m : base.getModeList()) {
-                if(m.getIdentifier() == "jm.mode.replmode.REPLMode"){
+                if (m.getIdentifier() == "jm.mode.replmode.REPLMode") {
                     base.changeMode(m);
                     System.out.println("switched to REPL mode");
                 }
-                
             }
-
         }
 
         versionsTree = new File(versionsCode.getAbsolutePath() + "/tree.json");
-        // System.out.println(versionsTree.getAbsoluteFile());
-        // System.out.println(versionsTree.getAbsolutePath());
         if (!versionsTree.exists()) {
             System.out.println("No Existing Quickpose Session Detected - creating a new verison history...");
-            //replaceCode(new SketchCode(new File(folder, filename), ext));
-            String currentText = "orig";
-            try {
-                currentText = editor.getSketch().getCode(0).getDocumentText();
-            } catch (BadLocationException e1) {
-                // TODO Auto-generated catch block
-                e1.printStackTrace();
-            }
-            System.out.println("currentText:"+currentText+":");
-            if (starterCodeFile.exists() && currentText == "") {
-                starterCode = new SketchCode(starterCodeFile,".pde");
+            System.out.println(starterCodeFile.exists());
+            System.out.println(editor.getText().isEmpty());
+
+            if (starterCodeFile.exists() && editor.getText().isEmpty()) {
                 try {
-                    editor.getSketch();
-                } catch (BadLocationException e) {
+
+                    System.out.println(starterCodeFile.toPath() + ":" + editor.getSketch().getMainFile().toPath());
+                    Files.move(starterCodeFile.toPath(), editor.getSketch().getMainFile().toPath(),
+                            StandardCopyOption.REPLACE_EXISTING);
+                    // base.getActiveEditor().getSketch().updateSketchCodes();
+                    base.getActiveEditor().getSketch().reload();
+                    editor.handleSave(false);
+                } catch (IOException e1) {
                     // TODO Auto-generated catch block
-                    e.printStackTrace();
+                    e1.printStackTrace();
                 }
             }
-            editor.handleSaveAs();
+
             String rootFolder = makeVersion(0);
             Data root = new Data(rootFolder);
             codeTree = new Tree(root);
@@ -401,7 +395,7 @@ public class VCFA implements Tool {
     private int fork(int id) {
         if (codeTree.idExists(id)) {
             Node parent = codeTree.getNode(id);
-            
+
             if (parent != null) {
                 Data data = new Data("");
                 Node child = parent.addChild(data);
@@ -445,7 +439,7 @@ public class VCFA implements Tool {
         } else {
             base.getActiveEditor().getSketch().getMainFile().setWritable(false);
         }
-        base.getActiveEditor().getSketch().reload();
+        base.getActiveEditor().getSketch().updateSketchCodes();
         base.getActiveEditor().handleSave(true);
         currentVersion = id;
         // System.out.println("Switched version to "+ id );
@@ -453,15 +447,15 @@ public class VCFA implements Tool {
 
     private String makeVersion(int id) {
         // base.getActiveEditor().getSketch().reload();
-        
+
         base.getActiveEditor().handleSave(true);
         File folder = new File(versionsCode.getAbsolutePath() + "/_" + id);
         folder.mkdir();
         File[] dirListing = sketchFolder.listFiles();
         if (dirListing != null) {
             for (File f : dirListing) {
-                if (FilenameUtils.equals(f.getName(), "render.png") || 
-                    FilenameUtils.isExtension(f.getName(), "pde")) {
+                if (FilenameUtils.equals(f.getName(), "render.png") ||
+                        FilenameUtils.isExtension(f.getName(), "pde")) {
                     File newFile = new File(folder.getAbsolutePath() + "/" + f.getName());
                     copyFile(f, newFile);
                 }
