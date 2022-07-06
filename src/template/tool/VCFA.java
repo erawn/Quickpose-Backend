@@ -32,6 +32,8 @@ package template.tool;
 import spark.*;
 import static spark.Spark.*;
 import static spark.Filter.*;
+import com.fasterxml.jackson.jr.*;
+import com.fasterxml.jackson.jr.ob.JSON;
 
 import java.io.*;
 import java.io.BufferedWriter;
@@ -455,8 +457,10 @@ public class VCFA implements Tool {
             base.getActiveEditor().getSketch().getMainFile().setWritable(true);
         } else {
             base.getActiveEditor().getSketch().getMainFile().setWritable(false);
+            base.getActiveEditor().getSketch().getMainFile().setReadOnly();
         }
-        base.getActiveEditor().getSketch().updateSketchCodes();
+        // base.getActiveEditor().getSketch().updateSketchCodes();
+        base.getActiveEditor().getSketch().reload();
         base.getActiveEditor().handleSave(true);
         currentVersion = id;
         // System.out.println("Switched version to "+ id );
@@ -500,11 +504,13 @@ public class VCFA implements Tool {
             System.out.println("Exception Occured: " + e.toString());
         }
         try {
-            FileWriter fileWriter;
-            fileWriter = new FileWriter(versionsTree.getAbsoluteFile(), true);
-            BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-            bufferedWriter.write(codeTree.getJSONSave(currentVersion));
-            bufferedWriter.close();
+            // FileWriter fileWriter;
+            // fileWriter = new FileWriter(versionsTree.getAbsoluteFile(), true);
+            // BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+            // bufferedWriter.write(codeTree.getJSONSave(currentVersion));
+            // bufferedWriter.close();
+
+            JSON.std.write(JSON.std.anyFrom(codeTree.getJSONSave(currentVersion)), versionsTree.getAbsoluteFile());
 
         } catch (IOException e) {
             System.out.println("Error Saving JSON to File");

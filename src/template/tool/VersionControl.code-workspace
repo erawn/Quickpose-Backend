@@ -26,6 +26,7 @@
 		"java.project.sourcePaths": [
 			"src",
 			"ProcessingJars"
-		]
+		],
+		"java.format.settings.url": "eclipse-formatter.xml"
 	}
 }
