@@ -8,6 +8,4 @@ Download here: into your Documents/Processing/tools/ Folder. The complete path s
 
 /Documents/Processing/tools/VCFA
 
-Next, download the starter template.pde. Open it, rename it to whatever you want, and save. Then run it once. 
-
-Next, go to Tools-> Version Control for Artists. 
+Next, go to Tools-> Version Control for Artists on a Blank Sketch.

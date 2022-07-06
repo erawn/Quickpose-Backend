@@ -32,7 +32,6 @@ package template.tool;
 import spark.*;
 import static spark.Spark.*;
 import static spark.Filter.*;
-import com.fasterxml.jackson.jr.*;
 import com.fasterxml.jackson.jr.ob.JSON;
 
 import java.io.*;
@@ -57,6 +56,17 @@ import javax.swing.text.BadLocationException;
 import javax.servlet.*;
 import javax.servlet.http.*;
 
+//import org.slf4j.Logger;
+// import org.slf4j.impl.SimpleLoggerFactory;
+// import org.slf4j.impl.SimpleLogger;
+// import ch.qos.logback.classic.Level;
+// import ch.qos.logback.classic.Logger;
+
+import org.slf4j.LoggerFactory;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.json.JSONArray;
@@ -76,7 +86,7 @@ import processing.app.ui.Editor;
 
 // when creating a tool, the name of the main class which implements Tool must
 // be the same as the value defined for project.name in your build.properties
-public class VCFA implements Tool {
+public class Quickpose implements Tool {
     Base base;
     boolean setup = false;
     private File sketchFolder;
@@ -98,7 +108,7 @@ public class VCFA implements Tool {
     private Lock tldrLock = new ReentrantLock();
 
     public String getMenuTitle() {
-        return "Version Control for Artists";
+        return "Quickpose";
     }
 
     public void init(Base base) {
@@ -108,7 +118,10 @@ public class VCFA implements Tool {
     }
 
     public void run() {
-        // Slf4jLog
+        System.out.println("##tool.name## ##tool.prettyVersion## by ##author##");
+        Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        root.setLevel(Level.ERROR);
+
         if (base.getActiveEditor().getSketch().isUntitled()) {
             Messages.showMessage("Quickpose: Unsaved Sketch",
                     "Quickpose Can't Run on an Unsaved Sketch, Please Save Sketch and Run Again");
@@ -118,6 +131,12 @@ public class VCFA implements Tool {
             if (setup == false) {
                 networkSetup();
             }
+
+            
+            
+            
+            // Logger rootLogger = (Logger) SimpleLoggerFactory.getLogger(SimpleLogger.  SimpleLogger.ROOT_LOGGER_NAME);
+            // rootLogger.setLevel(Level.WARN);
 
             // // FOR TESTING ONLY
             // try {
@@ -143,13 +162,15 @@ public class VCFA implements Tool {
 
             // editor.getSketch().reload();
 
-            System.out.println("##tool.name## ##tool.prettyVersion## by ##author##");
+            
+            //System.out.println(base.getActiveEditor().getMenuBar().getMenu(0).getActionCommand().toString());
         }
 
     }
 
     private void update() {
         // check if files are modified first??
+        
         File render = new File(sketchFolder.toPath() + "/render.png");
         File storedRender = new File(versionsCode.getAbsolutePath() + "/_" + currentVersion + "/render.png");
         boolean fileModified = base.getActiveEditor().getSketch().isModified();
@@ -393,6 +414,7 @@ public class VCFA implements Tool {
                     // base.getActiveEditor().getSketch().updateSketchCodes();
                     base.getActiveEditor().getSketch().reload();
                     editor.handleSave(false);
+                    //editor.
                     // base.getActiveEditor().getMode().getToolbarMenu().
                 } catch (IOException e1) {
                     // TODO Auto-generated catch block
