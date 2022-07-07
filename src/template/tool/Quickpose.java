@@ -107,6 +107,8 @@ public class Quickpose implements Tool {
     private Lock renderLock = new ReentrantLock();
     private Lock tldrLock = new ReentrantLock();
 
+    private org.slf4j.Logger logger = LoggerFactory.getLogger(Quickpose.class);
+
     public String getMenuTitle() {
         return "Quickpose";
     }
@@ -118,7 +120,7 @@ public class Quickpose implements Tool {
     }
 
     public void run() {
-        System.out.println("##tool.name## ##tool.prettyVersion## by ##author##");
+       
         Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         root.setLevel(Level.ERROR);
 
@@ -128,22 +130,10 @@ public class Quickpose implements Tool {
             base.getActiveEditor().handleSave(false);
 
         } else {
+            System.out.println("##tool.name## (v##tool.prettyVersion##) by ##author.name##");
             if (setup == false) {
                 networkSetup();
             }
-
-            
-            
-            
-            // Logger rootLogger = (Logger) SimpleLoggerFactory.getLogger(SimpleLogger.  SimpleLogger.ROOT_LOGGER_NAME);
-            // rootLogger.setLevel(Level.WARN);
-
-            // // FOR TESTING ONLY
-            // try {
-            // FileUtils.deleteDirectory(new
-            // File(base.getActiveEditor().getSketch().getFolder()+"/"+"versions_code"));
-            // }catch(IOException e) {}
-            // //FOR TESTING ONLY
             if (executor != null) {
                 executor.shutdownNow();
             }
@@ -169,8 +159,6 @@ public class Quickpose implements Tool {
     }
 
     private void update() {
-        // check if files are modified first??
-        
         File render = new File(sketchFolder.toPath() + "/render.png");
         File storedRender = new File(versionsCode.getAbsolutePath() + "/_" + currentVersion + "/render.png");
         boolean fileModified = base.getActiveEditor().getSketch().isModified();
@@ -197,7 +185,8 @@ public class Quickpose implements Tool {
 
     private void networkSetup() {
         port(serverPort);
-        System.out.println("Starting server on port:" + serverPort);
+        System.out.println("Quickpose: Starting server on port:" + serverPort);
+        System.out.println("Open ##tool.url## in a Browser to Start");
         options("/*",
                 (request, response) -> {
 
@@ -230,11 +219,11 @@ public class Quickpose implements Tool {
             return codeTree.getJSON();
         });
         get("/fork/:id", (request, response) -> {
-            // System.out.println("Fork on :"+ request.params(":name"));
+            logger.info("Fork ID:"+Integer.parseInt(request.params(":id")));
             return fork(Integer.parseInt(request.params(":id")));
         });
         get("/select/:id", (request, response) -> {
-            // System.out.println("Select Node :"+ request.params(":name"));
+            logger.info("Selected ID:"+Integer.parseInt(request.params(":id")));
             currentVersion = Integer.parseInt(request.params(":id"));
             changeActiveVersion(currentVersion);
             return currentVersion;
@@ -247,47 +236,41 @@ public class Quickpose implements Tool {
             // System.out.println("Current ID Request :" + currentVersion);
             return sketchFolder.getName();
         });
-        post("/positions.json", (request, response) -> {
-            response.type("application/json");
-            System.out.println(request.body());
-            updatePositions(request.body());
-            return "Success";
-        });
         post("/tldrfile", (request, response) -> {
             File f = new File(versionsCode.toPath() + "/quickpose.tldr");
             tldrLock.lock();
             try {
                 request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
-                try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { // getPart needs to
-                                                                                                    // use
-                                                                                                    // same "name" as
-                                                                                                    // input
-                                                                                                    // field in form
+                // getPart needs to use same "name" as input field in form
+                try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
                     Files.copy(input, f.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 }
             } finally {
                 tldrLock.unlock();
             }
-            // logUploadInfo(request, f.toPath());
+            logUploadInfo(request, f.toPath(), logger);
             return "Success";
         });
         get("/tldrfile", (request, response) -> {
             File f = new File(versionsCode.toPath() + "/quickpose.tldr");
             if (f.exists()) {
-                tldrLock.lock();
-                try {
-                    try (OutputStream out = response.raw().getOutputStream()) {
-                        response.header("Content-Disposition", "filename=quickpose.tldr");
-                        Files.copy(f.toPath(), out);
-                        out.flush();
-                        response.status(200);
-                        // System.out.println("Returned tldr");
+                if(tldrLock.tryLock()){
+                    try {
+                        try (OutputStream out = response.raw().getOutputStream()) {
+                            response.header("Content-Disposition", "filename=quickpose.tldr");
+                            Files.copy(f.toPath(), out);
+                            out.flush();
+                            response.status(200);
+                        }
+                    } finally {
+                        tldrLock.unlock();
                     }
-                } finally {
-                    tldrLock.unlock();
+                    return response;
+                }else{
+                    logger.warn("Quickpose: canvas file failed to save — if this happens often, your canvas might not be saved properly");
+                    response.status(400);
+                    return response;
                 }
-                return response;
-
             } else {
                 response.status(201);
                 return response;
@@ -299,7 +282,7 @@ public class Quickpose implements Tool {
                 response.status(200);
             } else {
                 response.status(201);
-                f = new File(sketchFolder.getParentFile().getAbsolutePath() + "/tools/VCFA/examples/noicon.png");
+                f = new File(sketchFolder.getParentFile().getAbsolutePath() + "/tools/Quickpose/examples/noicon.png");
             }
             if (request.params(":id") == String.valueOf(currentVersion)) {
                 renderLock.lock();
@@ -342,7 +325,7 @@ public class Quickpose implements Tool {
             if (f.exists()) {
                 if (f.delete()) {
                     response.status(200);
-                    System.out.println("deleted file" + f.getAbsolutePath());
+                    //System.out.println("deleted file" + f.getAbsolutePath());
                     return response;
                 }
             }
@@ -357,14 +340,14 @@ public class Quickpose implements Tool {
                                                                                                 // field in form
                 Files.copy(input, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
-            logUploadInfo(request, tempFile.toPath());
+            logUploadInfo(request, tempFile.toPath(), logger);
             return "Success";
         });
 
     }
 
-    private static void logUploadInfo(Request req, Path tempFile) throws IOException, ServletException {
-        System.out.println("Uploaded file '" + getFileName(req.raw().getPart("uploaded_file")) + "' saved as '"
+    private static void logUploadInfo(Request req, Path tempFile,org.slf4j.Logger logger ) throws IOException, ServletException {
+        logger.info("Uploaded file '" + getFileName(req.raw().getPart("uploaded_file")) + "' saved as '"
                 + tempFile.toAbsolutePath() + "'");
     }
 
@@ -386,25 +369,24 @@ public class Quickpose implements Tool {
         assetsFolder = new File(versionsCode.toPath() + "/" + "assets");
         assetsFolder.mkdir();
         File starterCodeFile = new File(
-                Base.getSketchbookToolsFolder().toPath() + "/VCFA/examples/QuickposeDefault.pde");
+                Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/QuickposeDefault.pde");
 
         if (editor.getMode().getIdentifier() == "jm.mode.replmode.REPLMode") {
-            System.out.println("Running in REPL Mode");
+            logger.info("Quickpose: Running in REPL Mode");
         } else {
-            System.out.println("Please Run in REPL Mode!");
+            logger.warn("Quickpose: Please Run in REPL Mode!");
             System.out.println(base.getModeList());
             for (Mode m : base.getModeList()) {
                 if (m.getIdentifier() == "jm.mode.replmode.REPLMode") {
                     base.changeMode(m);
-                    System.out.println("switched to REPL mode");
+                    System.out.println("Quickpose: Switched to REPL mode");
                 }
             }
         }
 
         versionsTree = new File(versionsCode.getAbsolutePath() + "/tree.json");
         if (!versionsTree.exists()) {
-            System.out.println("No Existing Quickpose Session Detected - creating a new verison history...");
-            System.out.println(editor.getText().length());
+            logger.warn("Quickpose: No Existing Quickpose Session Detected - creating a new verison history...");
             if (starterCodeFile.exists() && editor.getText().length() < 10) {
                 try {
                     // System.out.println(starterCodeFile.toPath() + ":" +
@@ -412,13 +394,13 @@ public class Quickpose implements Tool {
                     Files.move(starterCodeFile.toPath(), editor.getSketch().getMainFile().toPath(),
                             StandardCopyOption.REPLACE_EXISTING);
                     // base.getActiveEditor().getSketch().updateSketchCodes();
-                    base.getActiveEditor().getSketch().reload();
+                    editor.getSketch().reload();
                     editor.handleSave(false);
                     //editor.
                     // base.getActiveEditor().getMode().getToolbarMenu().
                 } catch (IOException e1) {
                     // TODO Auto-generated catch block
-                    e1.printStackTrace();
+                    logger.error(e1.getMessage());
                 }
             }
 
@@ -428,7 +410,7 @@ public class Quickpose implements Tool {
             changeActiveVersion(0);
             writeJSONFromRoot();
         } else {
-            System.out.println("Existing Quickpose Session Found! Loading...");
+            logger.info("Quickpose: Existing Quickpose Session Found! Loading...");
             readJSONToRoot();
         }
     }
@@ -446,14 +428,14 @@ public class Quickpose implements Tool {
                 return child.id;
             }
         }
-        System.out.println("Attempted Fork: Node Doesn't Exist");
+        logger.error("Quickpose: Attempted Fork: Node Doesn't Exist");
         return -1;
     }
 
     private void changeActiveVersion(int id) {
 
         if (!codeTree.idExists(id)) {
-            System.out.println("Attempted to change active version to invalid Id");
+            logger.error("Quickpose: Attempted to change active version to invalid Id");
             return;
         }
         File[] sketchListing = sketchFolder.listFiles();
@@ -476,14 +458,14 @@ public class Quickpose implements Tool {
             }
         }
         if (codeTree.getNode(id).children.size() == 0) {
-            base.getActiveEditor().getSketch().getMainFile().setWritable(true);
+            editor.getSketch().getMainFile().setWritable(true);
         } else {
-            base.getActiveEditor().getSketch().getMainFile().setWritable(false);
-            base.getActiveEditor().getSketch().getMainFile().setReadOnly();
+            editor.getSketch().getMainFile().setWritable(false);
+            editor.getSketch().getMainFile().setReadOnly();
         }
         // base.getActiveEditor().getSketch().updateSketchCodes();
-        base.getActiveEditor().getSketch().reload();
-        base.getActiveEditor().handleSave(true);
+        editor.getSketch().reload();
+        editor.handleSave(true);
         currentVersion = id;
         // System.out.println("Switched version to "+ id );
     }
@@ -491,7 +473,7 @@ public class Quickpose implements Tool {
     private String makeVersion(int id) {
         // base.getActiveEditor().getSketch().reload();
 
-        base.getActiveEditor().handleSave(true);
+        editor.handleSave(true);
         File folder = new File(versionsCode.getAbsolutePath() + "/_" + id);
         folder.mkdir();
         File[] dirListing = sketchFolder.listFiles();
@@ -506,16 +488,6 @@ public class Quickpose implements Tool {
         }
         return folder.getAbsolutePath();
     }
-
-    private void updatePositions(String input) {
-        try {
-            nodePositions = new JSONObject(input);
-        } catch (Exception e) {
-        }
-        // System.out.println(input);
-
-    }
-
     private void writeJSONFromRoot() {
         if (versionsTree.exists()) {
             versionsTree.delete();
@@ -523,19 +495,12 @@ public class Quickpose implements Tool {
         try {
             versionsTree.createNewFile();
         } catch (IOException e) {
-            System.out.println("Exception Occured: " + e.toString());
+            logger.error("Exception Occured in writeJSONFromRoot: " + e.toString());
         }
         try {
-            // FileWriter fileWriter;
-            // fileWriter = new FileWriter(versionsTree.getAbsoluteFile(), true);
-            // BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-            // bufferedWriter.write(codeTree.getJSONSave(currentVersion));
-            // bufferedWriter.close();
-
             JSON.std.write(JSON.std.anyFrom(codeTree.getJSONSave(currentVersion)), versionsTree.getAbsoluteFile());
-
         } catch (IOException e) {
-            System.out.println("Error Saving JSON to File");
+            logger.error("Error Saving JSON to File");
         }
     }
 
@@ -560,7 +525,7 @@ public class Quickpose implements Tool {
 
             int rootInd = JSONSearch(nodes, 0);
             if (rootInd == -1) {
-                System.out.println("Couldn't Find Root Node on Import");
+                logger.error("Couldn't Find Root Node on Import");
             }
             Data root = new Data(nodes.getJSONObject(rootInd).getString("path"));
             importTree = new Tree(root);
@@ -578,32 +543,15 @@ public class Quickpose implements Tool {
                         int childInd = JSONSearch(nodes, target);
                         Data data = new Data(nodes.getJSONObject(childInd).getString("path"));
                         Node child = parent.setChild(data, target);
-                        // System.out.println("created child : " + target + " from parent : "+ source);
+                        logger.info("created child : " + target + " from parent : "+ source);
                     }
-                    // System.out.println("Edge From : " + source + " to : " + target);
-
                 }
             }
-
             codeTree = importTree;
             changeActiveVersion(graph.getInt("CurrentNode"));
-
         } catch (Exception e) {
-            System.out.println("Exception in Building Tree : " + e.toString());
+            logger.error("Exception in Building Tree : " + e.toString());
         }
-
-        // if(codeTree.idExists(id)) {
-        // Node parent = codeTree.getNode(id);
-        // Data data = new Data("");
-        // if(parent != null) {
-        // Node child = parent.addChild(data);
-        // child.data.path = makeVersion(child.id);
-        // changeActiveVersion(child.id);
-        // }
-        // writeJSONFromRoot();
-        // }else {
-        // System.out.println("Attempted Fork: Node Doesn't Exist");
-        // }
     }
 
     int JSONSearch(JSONArray arr, int id) {
@@ -617,7 +565,6 @@ public class Quickpose implements Tool {
 
         }
         return -1;
-
     }
 
     private static void copyFile(File src, File dest) {
@@ -627,7 +574,7 @@ public class Quickpose implements Tool {
             }
         } catch (IOException e) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
     }
 }
