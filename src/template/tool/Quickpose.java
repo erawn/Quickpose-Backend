@@ -122,7 +122,7 @@ public class Quickpose implements Tool {
     public void run() {
        
         Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        root.setLevel(Level.ERROR);
+        root.setLevel(Level.WARN);
 
         if (base.getActiveEditor().getSketch().isUntitled()) {
             Messages.showMessage("Quickpose: Unsaved Sketch",
@@ -216,11 +216,16 @@ public class Quickpose implements Tool {
         });
         get("/versions.json", (request, response) -> {
             response.type("application/json");
-            return codeTree.getJSON();
+            return codeTree.getJSONSave(currentVersion);
         });
         get("/fork/:id", (request, response) -> {
             logger.info("Fork ID:"+Integer.parseInt(request.params(":id")));
-            return fork(Integer.parseInt(request.params(":id")));
+            if(fork(Integer.parseInt(request.params(":id"))) > 0){
+                logger.warn("sent fork");
+                return codeTree.getJSONSave(currentVersion);
+            }
+            response.status(500);
+            return response;
         });
         get("/select/:id", (request, response) -> {
             logger.info("Selected ID:"+Integer.parseInt(request.params(":id")));
