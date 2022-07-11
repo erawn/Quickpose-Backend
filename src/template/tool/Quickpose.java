@@ -123,7 +123,7 @@ public class Quickpose implements Tool {
     public void run() {
        
         Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        root.setLevel(Level.WARN);
+        root.setLevel(Level.INFO);
 
         if (base.getActiveEditor().getSketch().isUntitled()) {
             Messages.showMessage("Quickpose: Unsaved Sketch",
@@ -132,13 +132,14 @@ public class Quickpose implements Tool {
 
         } else {
             System.out.println("##tool.name## (v##tool.prettyVersion##) by ##author.name##");
+            dataSetup();
             if (setup == false) {
                 networkSetup();
             }
             if (executor != null) {
                 executor.shutdownNow();
             }
-            dataSetup();
+            
 
             Runnable updateLoop = new Runnable() {
                 public void run() {
@@ -373,7 +374,8 @@ public class Quickpose implements Tool {
         assetsFolder = new File(versionsCode.toPath() + "/" + "assets");
         assetsFolder.mkdir();
         File starterCodeFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/QuickposeDefault.pde");
-
+        File starterCatFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/cat.png");
+        File startertldr = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/quickpose.tldr");
         if (editor.getMode().getIdentifier() == "jm.mode.replmode.REPLMode") {
             logger.info("Quickpose: Running in REPL Mode");
         } else {
@@ -392,6 +394,8 @@ public class Quickpose implements Tool {
             logger.warn("Quickpose: No Existing Quickpose Session Detected - creating a new verison history");
             if (starterCodeFile.exists() && editor.getText().length() < 10) { //This is a hack
                     copyFile(starterCodeFile, editor.getSketch().getMainFile());
+                    copyFile(starterCatFile, new File(assetsFolder.toPath()+"/cat.png"));
+                    copyFile(startertldr, new File(versionsCode.toPath()+"/quickpose.tldr"));
                     editor.getSketch().reload();
                     editor.handleSave(false);
             }

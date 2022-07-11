@@ -1,0 +1,1247 @@
+{
+  "name": "quickpose.tldr",
+  "fileHandle": null,
+  "document": {
+    "id": "doc",
+    "name": null,
+    "version": 15.3,
+    "pages": {
+      "page": {
+        "id": "page",
+        "name": "Page 1",
+        "childIndex": 1,
+        "shapes": {
+          "node0": {
+            "id": "node0",
+            "type": "versionNode",
+            "name": "node0",
+            "parentId": "page",
+            "childIndex": 1,
+            "point": [
+              377,
+              280
+            ],
+            "radius": [
+              30,
+              30
+            ],
+            "rotation": 0,
+            "style": {
+              "color": "black",
+              "size": "small",
+              "isFilled": true,
+              "dash": "dotted",
+              "scale": 1
+            },
+            "label": "",
+            "labelPoint": [
+              0.5,
+              0.5
+            ],
+            "imgLink": "http://127.0.0.1:8080/image/0?1657533284023",
+            "isCurrent": true,
+            "hasLoaded": false
+          },
+          "77024278-eb88-4baf-150f-15cde863265e": {
+            "id": "77024278-eb88-4baf-150f-15cde863265e",
+            "type": "arrow",
+            "name": "Arrow",
+            "parentId": "page",
+            "childIndex": 2,
+            "point": [
+              426.07,
+              209.56
+            ],
+            "rotation": 0,
+            "bend": -0.32567044329604805,
+            "handles": {
+              "start": {
+                "id": "start",
+                "index": 0,
+                "point": [
+                  77.78,
+                  -0.4
+                ],
+                "canBind": true
+              },
+              "end": {
+                "id": "end",
+                "index": 1,
+                "point": [
+                  -1.61,
+                  62.72
+                ],
+                "canBind": true
+              },
+              "bend": {
+                "id": "bend",
+                "index": 2,
+                "point": [
+                  27.81,
+                  18.23
+                ]
+              }
+            },
+            "decorations": {
+              "end": "arrow"
+            },
+            "style": {
+              "color": "white",
+              "size": "small",
+              "isFilled": true,
+              "dash": "draw",
+              "scale": 1
+            },
+            "label": "",
+            "labelPoint": [
+              0.5,
+              0.5
+            ]
+          },
+          "e8b9908a-6179-40df-1aaf-1ae2b6c687aa": {
+            "id": "e8b9908a-6179-40df-1aaf-1ae2b6c687aa",
+            "type": "text",
+            "name": "Text",
+            "parentId": "page",
+            "childIndex": 3,
+            "point": [
+              380.7340995815372,
+              158.16244710651264
+            ],
+            "rotation": 0,
+            "text": "This is your current version",
+            "style": {
+              "color": "white",
+              "size": "small",
+              "isFilled": true,
+              "dash": "draw",
+              "scale": 1,
+              "font": "script",
+              "textAlign": "middle"
+            }
+          },
+          "e225e263-47c1-4507-05ea-d3db450f1e4e": {
+            "id": "e225e263-47c1-4507-05ea-d3db450f1e4e",
+            "type": "text",
+            "name": "Text",
+            "parentId": "page",
+            "childIndex": 4,
+            "point": [
+              486.32,
+              215.34
+            ],
+            "rotation": 0,
+            "text": "To see what it looks like, \nrun the sketch!",
+            "style": {
+              "color": "white",
+              "size": "small",
+              "isFilled": true,
+              "dash": "draw",
+              "scale": 1,
+              "font": "script",
+              "textAlign": "middle"
+            }
+          },
+          "653ec053-9b75-42e9-2d8f-2d85fd88a02c": {
+            "id": "653ec053-9b75-42e9-2d8f-2d85fd88a02c",
+            "type": "arrow",
+            "name": "Arrow",
+            "parentId": "page",
+            "childIndex": 5,
+            "point": [
+              247.22,
+              266.45
+            ],
+            "rotation": 0,
+            "bend": -0.376437420396521,
+            "handles": {
+              "start": {
+                "id": "start",
+                "index": 0,
+                "point": [
+                  -3.01,
+                  -6.31
+                ],
+                "canBind": true
+              },
+              "end": {
+                "id": "end",
+                "index": 1,
+                "point": [
+                  112.78,
+                  48.4
+                ],
+                "canBind": true
+              },
+              "bend": {
+                "id": "bend",
+                "index": 2,
+                "point": [
+                  44.59,
+                  42.84
+                ]
+              }
+            },
+            "decorations": {
+              "end": "arrow"
+            },
+            "style": {
+              "color": "white",
+              "size": "small",
+              "isFilled": true,
+              "dash": "draw",
+              "scale": 1
+            },
+            "label": "",
+            "labelPoint": [
+              0.5,
+              0.5
+            ]
+          },
+          "49be344f-2691-4f55-193c-4981b02ad3b0": {
+            "id": "49be344f-2691-4f55-193c-4981b02ad3b0",
+            "type": "text",
+            "name": "Text",
+            "parentId": "page",
+            "childIndex": 6,
+            "point": [
+              86.44,
+              197.21
+            ],
+            "rotation": 0,
+            "text": "To Fork A Version, \nShift+Click it! ",
+            "style": {
+              "color": "white",
+              "size": "small",
+              "isFilled": true,
+              "dash": "draw",
+              "scale": 1,
+              "font": "script",
+              "textAlign": "middle"
+            }
+          },
+          "da4e9fb0-6bc7-4262-29c6-e008531a3f23": {
+            "id": "da4e9fb0-6bc7-4262-29c6-e008531a3f23",
+            "type": "text",
+            "name": "Text",
+            "parentId": "page",
+            "childIndex": 7,
+            "point": [
+              12.45,
+              340.19
+            ],
+            "rotation": 0,
+            "text": "This canvas works as you'd expect:",
+            "style": {
+              "color": "white",
+              "size": "small",
+              "isFilled": true,
+              "dash": "draw",
+              "scale": 1,
+              "font": "script",
+              "textAlign": "middle"
+            }
+          },
+          "dc4057d8-2a1b-42e6-16b1-ca6e5407d4c1": {
+            "id": "dc4057d8-2a1b-42e6-16b1-ca6e5407d4c1",
+            "type": "text",
+            "name": "Text",
+            "parentId": "page",
+            "childIndex": 8,
+            "point": [
+              16.97,
+              393.05
+            ],
+            "rotation": 0,
+            "text": "With Stickies",
+            "style": {
+              "color": "white",
+              "size": "small",
+              "isFilled": true,
+              "dash": "draw",
+              "scale": 1,
+              "font": "script",
+              "textAlign": "middle"
+            }
+          },
+          "1231d100-da1b-483d-31d7-a9f6e29835b8": {
+            "id": "1231d100-da1b-483d-31d7-a9f6e29835b8",
+            "type": "text",
+            "name": "Text",
+            "parentId": "page",
+            "childIndex": 9,
+            "point": [
+              245.73,
+              391.28
+            ],
+            "rotation": 0,
+            "text": "Images",
+            "style": {
+              "color": "white",
+              "size": "small",
+              "isFilled": true,
+              "dash": "draw",
+              "scale": 1,
+              "font": "script",
+              "textAlign": "middle"
+            }
+          },
+          "b4af046a-8e7b-4608-1fc1-2307897d9f06": {
+            "id": "b4af046a-8e7b-4608-1fc1-2307897d9f06",
+            "type": "text",
+            "name": "Text",
+            "parentId": "page",
+            "childIndex": 10,
+            "point": [
+              417.15,
+              388.87
+            ],
+            "rotation": 0,
+            "text": "Scribbles",
+            "style": {
+              "color": "white",
+              "size": "small",
+              "isFilled": true,
+              "dash": "draw",
+              "scale": 1,
+              "font": "script",
+              "textAlign": "middle"
+            }
+          },
+          "66fda076-3698-4c2b-199b-60657c7dee0c": {
+            "id": "66fda076-3698-4c2b-199b-60657c7dee0c",
+            "type": "text",
+            "name": "Text",
+            "parentId": "page",
+            "childIndex": 11,
+            "point": [
+              598.26,
+              389.21
+            ],
+            "rotation": 0,
+            "text": "And Shapes!",
+            "style": {
+              "color": "white",
+              "size": "small",
+              "isFilled": true,
+              "dash": "draw",
+              "scale": 1,
+              "font": "script",
+              "textAlign": "middle"
+            }
+          },
+          "c5bc9982-ae2b-4158-222b-5f5df5d8a493": {
+            "id": "c5bc9982-ae2b-4158-222b-5f5df5d8a493",
+            "type": "sticky",
+            "name": "Sticky",
+            "parentId": "page",
+            "childIndex": 12,
+            "point": [
+              -18.06,
+              470.94
+            ],
+            "size": [
+              200,
+              200
+            ],
+            "text": "I'm a sticky!",
+            "rotation": 5.733836181203397,
+            "style": {
+              "color": "white",
+              "size": "small",
+              "isFilled": true,
+              "dash": "draw",
+              "scale": 1,
+              "font": "script",
+              "textAlign": "middle"
+            }
+          },
+          "0d08efd6-1df9-4395-28cc-2dc3b7db745c": {
+            "id": "0d08efd6-1df9-4395-28cc-2dc3b7db745c",
+            "type": "image",
+            "name": "Image",
+            "parentId": "page",
+            "childIndex": 13,
+            "point": [
+              196.89,
+              436.47
+            ],
+            "size": [
+              142.49,
+              213.73
+            ],
+            "rotation": 0,
+            "style": {
+              "color": "white",
+              "size": "small",
+              "isFilled": true,
+              "dash": "draw",
+              "scale": 1
+            },
+            "assetId": "c97b8e1e-2a63-4461-129a-63fc50f0adc7"
+          },
+          "7420c51e-a6d4-4aad-10f9-54ce53a79c12": {
+            "id": "7420c51e-a6d4-4aad-10f9-54ce53a79c12",
+            "type": "draw",
+            "name": "Draw",
+            "parentId": "page",
+            "childIndex": 14,
+            "point": [
+              382.08,
+              453.61
+            ],
+            "rotation": 0,
+            "style": {
+              "color": "white",
+              "size": "small",
+              "isFilled": true,
+              "dash": "draw",
+              "scale": 1
+            },
+            "points": [
+              [
+                4.83,
+                33.87,
+                0.5
+              ],
+              [
+                4.83,
+                33.87,
+                0.5
+              ],
+              [
+                4.83,
+                33.99,
+                0.5
+              ],
+              [
+                4.83,
+                34.58,
+                0.5
+              ],
+              [
+                4.83,
+                36.66,
+                0.5
+              ],
+              [
+                4.83,
+                39.93,
+                0.5
+              ],
+              [
+                4.83,
+                43.6,
+                0.5
+              ],
+              [
+                4.83,
+                47.38,
+                0.5
+              ],
+              [
+                4.83,
+                51.26,
+                0.5
+              ],
+              [
+                4.83,
+                55.2,
+                0.5
+              ],
+              [
+                4.83,
+                58.86,
+                0.5
+              ],
+              [
+                4.83,
+                62.52,
+                0.5
+              ],
+              [
+                5.04,
+                66.18,
+                0.5
+              ],
+              [
+                6.02,
+                69.84,
+                0.5
+              ],
+              [
+                7.99,
+                73.6,
+                0.5
+              ],
+              [
+                10.68,
+                77.16,
+                0.5
+              ],
+              [
+                13.63,
+                80.07,
+                0.5
+              ],
+              [
+                16.53,
+                82.3,
+                0.5
+              ],
+              [
+                19.11,
+                83.9,
+                0.5
+              ],
+              [
+                21.21,
+                84.88,
+                0.5
+              ],
+              [
+                22.94,
+                85.35,
+                0.5
+              ],
+              [
+                24.87,
+                85.49,
+                0.5
+              ],
+              [
+                27.48,
+                85.49,
+                0.5
+              ],
+              [
+                30.94,
+                85.08,
+                0.5
+              ],
+              [
+                35.07,
+                83.04,
+                0.5
+              ],
+              [
+                39.3,
+                78.98,
+                0.5
+              ],
+              [
+                43.68,
+                73.27,
+                0.5
+              ],
+              [
+                47.83,
+                66.34,
+                0.5
+              ],
+              [
+                50.88,
+                59.11,
+                0.5
+              ],
+              [
+                52.74,
+                51.53,
+                0.5
+              ],
+              [
+                53.63,
+                43.25,
+                0.5
+              ],
+              [
+                53.83,
+                35.3,
+                0.5
+              ],
+              [
+                53.76,
+                28.86,
+                0.5
+              ],
+              [
+                52.86,
+                23.29,
+                0.5
+              ],
+              [
+                51.21,
+                18.54,
+                0.5
+              ],
+              [
+                49.82,
+                15.3,
+                0.5
+              ],
+              [
+                48.68,
+                13.07,
+                0.5
+              ],
+              [
+                47.65,
+                11.53,
+                0.5
+              ],
+              [
+                46.96,
+                10.68,
+                0.5
+              ],
+              [
+                46.45,
+                10.43,
+                0.5
+              ],
+              [
+                46.01,
+                10.43,
+                0.5
+              ],
+              [
+                45.71,
+                10.43,
+                0.5
+              ],
+              [
+                45.47,
+                10.43,
+                0.5
+              ],
+              [
+                45.22,
+                10.43,
+                0.5
+              ],
+              [
+                44.99,
+                10.65,
+                0.5
+              ],
+              [
+                44.74,
+                11.37,
+                0.5
+              ],
+              [
+                44.42,
+                12.79,
+                0.5
+              ],
+              [
+                43.94,
+                14.66,
+                0.5
+              ],
+              [
+                43.06,
+                17.52,
+                0.5
+              ],
+              [
+                41.48,
+                21.96,
+                0.5
+              ],
+              [
+                39.3,
+                28.06,
+                0.5
+              ],
+              [
+                36.49,
+                35.59,
+                0.5
+              ],
+              [
+                33.29,
+                43.32,
+                0.5
+              ],
+              [
+                29.98,
+                50.83,
+                0.5
+              ],
+              [
+                26.71,
+                57.15,
+                0.5
+              ],
+              [
+                23.57,
+                61.93,
+                0.5
+              ],
+              [
+                20.46,
+                65.66,
+                0.5
+              ],
+              [
+                17.71,
+                68.19,
+                0.5
+              ],
+              [
+                15.31,
+                69.67,
+                0.5
+              ],
+              [
+                13.06,
+                70.26,
+                0.5
+              ],
+              [
+                10.74,
+                70.37,
+                0.5
+              ],
+              [
+                8.35,
+                70.37,
+                0.5
+              ],
+              [
+                6.17,
+                69.74,
+                0.5
+              ],
+              [
+                4.07,
+                67.87,
+                0.5
+              ],
+              [
+                2.28,
+                65.11,
+                0.5
+              ],
+              [
+                1.17,
+                61.76,
+                0.5
+              ],
+              [
+                0.39,
+                57.26,
+                0.5
+              ],
+              [
+                0,
+                51.56,
+                0.5
+              ],
+              [
+                0,
+                45.17,
+                0.5
+              ],
+              [
+                1.03,
+                38.33,
+                0.5
+              ],
+              [
+                3.68,
+                32.16,
+                0.5
+              ],
+              [
+                7.34,
+                27.22,
+                0.5
+              ],
+              [
+                11.82,
+                22.96,
+                0.5
+              ],
+              [
+                16.34,
+                19.78,
+                0.5
+              ],
+              [
+                20.73,
+                17.49,
+                0.5
+              ],
+              [
+                25.41,
+                15.78,
+                0.5
+              ],
+              [
+                30.2,
+                14.85,
+                0.5
+              ],
+              [
+                35.9,
+                14.5,
+                0.5
+              ],
+              [
+                41.85,
+                14.5,
+                0.5
+              ],
+              [
+                47.79,
+                15.27,
+                0.5
+              ],
+              [
+                54.24,
+                17.49,
+                0.5
+              ],
+              [
+                60.88,
+                21.17,
+                0.5
+              ],
+              [
+                68.26,
+                26.07,
+                0.5
+              ],
+              [
+                76.14,
+                31.71,
+                0.5
+              ],
+              [
+                82.65,
+                36.4,
+                0.5
+              ],
+              [
+                87.73,
+                39.76,
+                0.5
+              ],
+              [
+                95.15,
+                43.34,
+                0.5
+              ],
+              [
+                97.32,
+                43.75,
+                0.5
+              ],
+              [
+                98.83,
+                43.74,
+                0.5
+              ],
+              [
+                99.82,
+                42.66,
+                0.5
+              ],
+              [
+                100.55,
+                39.64,
+                0.5
+              ],
+              [
+                101.14,
+                34.66,
+                0.5
+              ],
+              [
+                101.34,
+                27.64,
+                0.5
+              ],
+              [
+                101.34,
+                18.92,
+                0.5
+              ],
+              [
+                101.27,
+                11.1,
+                0.5
+              ],
+              [
+                100.56,
+                5.74,
+                0.5
+              ],
+              [
+                99.35,
+                2.29,
+                0.5
+              ],
+              [
+                98.35,
+                0.55,
+                0.5
+              ],
+              [
+                97.41,
+                0.04,
+                0.5
+              ],
+              [
+                96.33,
+                0,
+                0.5
+              ],
+              [
+                94.44,
+                0.16,
+                0.5
+              ],
+              [
+                91.47,
+                1.43,
+                0.5
+              ],
+              [
+                88.05,
+                4.05,
+                0.5
+              ],
+              [
+                83.79,
+                7.58,
+                0.5
+              ],
+              [
+                78.53,
+                12.26,
+                0.5
+              ],
+              [
+                73.41,
+                17.54,
+                0.5
+              ],
+              [
+                68.27,
+                23.43,
+                0.5
+              ],
+              [
+                62.22,
+                30.72,
+                0.5
+              ],
+              [
+                55.92,
+                39.26,
+                0.5
+              ],
+              [
+                50.1,
+                47.97,
+                0.5
+              ],
+              [
+                44.91,
+                56.35,
+                0.5
+              ],
+              [
+                40.48,
+                64.13,
+                0.5
+              ],
+              [
+                37.25,
+                70.57,
+                0.5
+              ],
+              [
+                34.6,
+                76.18,
+                0.5
+              ],
+              [
+                32.08,
+                80.97,
+                0.5
+              ],
+              [
+                30.05,
+                84.43,
+                0.5
+              ],
+              [
+                28.48,
+                86.81,
+                0.5
+              ],
+              [
+                27.18,
+                88.16,
+                0.5
+              ],
+              [
+                26.02,
+                89.04,
+                0.5
+              ],
+              [
+                23.73,
+                90.13,
+                0.5
+              ],
+              [
+                22.42,
+                90.4,
+                0.5
+              ],
+              [
+                21.14,
+                90.59,
+                0.5
+              ],
+              [
+                19.83,
+                90.73,
+                0.5
+              ],
+              [
+                18.41,
+                90.93,
+                0.5
+              ],
+              [
+                16.97,
+                91.19,
+                0.5
+              ],
+              [
+                15.59,
+                91.33,
+                0.5
+              ],
+              [
+                14.57,
+                91.37,
+                0.5
+              ],
+              [
+                13.9,
+                91.37,
+                0.5
+              ],
+              [
+                13.9,
+                91.17,
+                0.5
+              ],
+              [
+                13.9,
+                90.57,
+                0.5
+              ],
+              [
+                13.9,
+                89.48,
+                0.5
+              ],
+              [
+                14.83,
+                87.71,
+                0.5
+              ],
+              [
+                18.17,
+                84.32,
+                0.5
+              ],
+              [
+                25.07,
+                78.07,
+                0.5
+              ],
+              [
+                34.15,
+                69.83,
+                0.5
+              ],
+              [
+                44.97,
+                60.48,
+                0.5
+              ],
+              [
+                57.33,
+                50.78,
+                0.5
+              ],
+              [
+                68.74,
+                42.81,
+                0.5
+              ],
+              [
+                78.71,
+                37.11,
+                0.5
+              ],
+              [
+                88.63,
+                33.24,
+                0.5
+              ],
+              [
+                99.75,
+                30.52,
+                0.5
+              ],
+              [
+                111.13,
+                28.96,
+                0.5
+              ],
+              [
+                121.76,
+                28.53,
+                0.5
+              ],
+              [
+                131.96,
+                28.47,
+                0.5
+              ],
+              [
+                141.61,
+                30.15,
+                0.5
+              ],
+              [
+                148.89,
+                33.14,
+                0.5
+              ],
+              [
+                153.93,
+                35.74,
+                0.5
+              ],
+              [
+                157.69,
+                37.87,
+                0.5
+              ]
+            ],
+            "isComplete": true
+          },
+          "9d03b665-0d5b-48ed-0f04-ccc6e53ab4a9": {
+            "id": "9d03b665-0d5b-48ed-0f04-ccc6e53ab4a9",
+            "type": "rectangle",
+            "name": "Rectangle",
+            "parentId": "page",
+            "childIndex": 15,
+            "point": [
+              590.67,
+              465.99
+            ],
+            "size": [
+              106.74,
+              85.99
+            ],
+            "rotation": 0,
+            "style": {
+              "color": "blue",
+              "size": "small",
+              "isFilled": true,
+              "dash": "dashed",
+              "scale": 1
+            },
+            "label": "",
+            "labelPoint": [
+              0.5,
+              0.5
+            ]
+          },
+          "39b97c24-1492-4a8a-1a8c-cc8a209996d3": {
+            "id": "39b97c24-1492-4a8a-1a8c-cc8a209996d3",
+            "type": "triangle",
+            "name": "Triangle",
+            "parentId": "page",
+            "childIndex": 16,
+            "point": [
+              621.56,
+              429.79
+            ],
+            "size": [
+              104.68,
+              130.02
+            ],
+            "rotation": 5.681719785109491,
+            "style": {
+              "color": "orange",
+              "size": "small",
+              "isFilled": false,
+              "dash": "draw",
+              "scale": 1
+            },
+            "label": "",
+            "labelPoint": [
+              0.5,
+              0.5
+            ]
+          }
+        },
+        "bindings": {}
+      }
+    },
+    "pageStates": {
+      "page": {
+        "id": "page",
+        "selectedIds": [],
+        "camera": {
+          "point": [
+            16.88,
+            -71.71
+          ],
+          "zoom": 1.0618056107024645
+        },
+        "editingId": null
+      }
+    },
+    "assets": {
+      "c97b8e1e-2a63-4461-129a-63fc50f0adc7": {
+        "id": "c97b8e1e-2a63-4461-129a-63fc50f0adc7",
+        "type": "image",
+        "name": "cat.png",
+        "src": "http://127.0.0.1:8080/assets/cat.png",
+        "size": [
+          336.21973400933297,
+          504.3296010139994
+        ]
+      }
+    }
+  },
+  "assets": {
+    "simData": "{\"nodes\":[{\"path\":\"/Users/erawn/Documents/Processing/sketch_220711j/versions_code/_0\",\"caretPosition\":145,\"id\":\"0\",\"label\":\"Node0\",\"index\":0,\"x\":81.4,\"y\":62,\"vy\":0,\"vx\":0,\"r\":6,\"fx\":81.4,\"fy\":62}],\"links\":[]}",
+    "alpha": "1.3361247793559473e-36",
+    "centerPoint": "[377,280]",
+    "c97b8e1e-2a63-4461-129a-63fc50f0adc7": {
+      "id": "c97b8e1e-2a63-4461-129a-63fc50f0adc7",
+      "type": "image",
+      "name": "cat.png",
+      "src": "http://127.0.0.1:8080/assets/cat.png",
+      "size": [
+        336.21973400933297,
+        504.3296010139994
+      ]
+    }
+  }
+}
