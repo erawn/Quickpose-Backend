@@ -1,13 +1,19 @@
 void setup(){  
   size(600,600); 
+  ellipseMode(CENTER);
+  fill(0,255,255,60);
 }
 
 void draw(){ 
-  background(0,200,0); 
+             
+   
+  background(255);          
+  
+  float t = map(millis() % 10000,0,10000, 0, PI*2);
+  
+  arc(height/2, width/2,height,width, t, t+PI,CHORD);
   
   
-  //Tweak however you like, whatever the current "render.png" is in main file will be 
-  //displayed in the quickpose viewer (nothing else supported at the moment)
   if(frameCount % 60 == 0){
     save("render.png");
   }
