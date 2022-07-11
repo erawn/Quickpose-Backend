@@ -216,13 +216,13 @@ public class Quickpose implements Tool {
         });
         get("/versions.json", (request, response) -> {
             response.type("application/json");
-            return codeTree.getJSONSave(currentVersion);
+            return codeTree.getJSONSave(currentVersion, sketchFolder.getName());
         });
         get("/fork/:id", (request, response) -> {
-            logger.info("Fork ID:"+Integer.parseInt(request.params(":id")));
-            if(fork(Integer.parseInt(request.params(":id"))) > 0){
+            logger.info("Fork ID:" + Integer.parseInt(request.params(":id")));
+            if (fork(Integer.parseInt(request.params(":id"))) > 0) {
                 logger.warn("sent fork");
-                return codeTree.getJSONSave(currentVersion);
+                return codeTree.getJSONSave(currentVersion, sketchFolder.getName());
             }
             response.status(500);
             return response;
@@ -391,7 +391,7 @@ public class Quickpose implements Tool {
 
         versionsTree = new File(versionsCode.getAbsolutePath() + "/tree.json");
         if (!versionsTree.exists()) {
-            logger.warn("Quickpose: No Existing Quickpose Session Detected - creating a new verison history...");
+            logger.warn("Quickpose: No Existing Quickpose Session Detected - creating a new verison history");
             if (starterCodeFile.exists() && editor.getText().length() < 10) {
                 try {
                     // System.out.println(starterCodeFile.toPath() + ":" +
@@ -462,11 +462,12 @@ public class Quickpose implements Tool {
                 }
             }
         }
+        // Something here breaks REPL mode
         if (codeTree.getNode(id).children.size() == 0) {
-            editor.getSketch().getMainFile().setWritable(true);
+            // editor.getSketch().getMainFile().setWritable(true);
         } else {
-            editor.getSketch().getMainFile().setWritable(false);
-            editor.getSketch().getMainFile().setReadOnly();
+            // editor.getSketch().getMainFile().setWritable(false);
+            // editor.getSketch().getMainFile().setReadOnly();
         }
         // base.getActiveEditor().getSketch().updateSketchCodes();
         editor.getSketch().reload();
