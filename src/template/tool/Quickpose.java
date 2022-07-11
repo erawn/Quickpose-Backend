@@ -110,6 +110,13 @@ public class Quickpose implements Tool {
 
     private org.slf4j.Logger logger = LoggerFactory.getLogger(Quickpose.class);
 
+    
+    Runnable updateLoop = new Runnable() {
+        public void run() {
+            update();
+        }
+    };
+
     public String getMenuTitle() {
         return "Quickpose";
     }
@@ -123,7 +130,7 @@ public class Quickpose implements Tool {
     public void run() {
        
         Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        root.setLevel(Level.INFO);
+        root.setLevel(Level.ERROR);
 
         if (base.getActiveEditor().getSketch().isUntitled()) {
             Messages.showMessage("Quickpose: Unsaved Sketch",
@@ -139,13 +146,6 @@ public class Quickpose implements Tool {
             if (executor != null) {
                 executor.shutdownNow();
             }
-            
-
-            Runnable updateLoop = new Runnable() {
-                public void run() {
-                    update();
-                }
-            };
             executor = Executors.newScheduledThreadPool(1);
             executor.scheduleAtFixedRate(updateLoop, 0, 100, TimeUnit.MILLISECONDS);
             setup = true;
