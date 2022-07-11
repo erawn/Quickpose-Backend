@@ -147,15 +147,7 @@ public class Quickpose implements Tool {
             executor = Executors.newScheduledThreadPool(1);
             executor.scheduleAtFixedRate(updateLoop, 0, 100, TimeUnit.MILLISECONDS);
             setup = true;
-            // System.out.println("Sketch Folder at : " + sketchFolder.getAbsolutePath());
-            // System.out.println(editor.getMode().getIdentifier());
-
-            // editor.getSketch().reload();
-
-            
-            //System.out.println(base.getActiveEditor().getMenuBar().getMenu(0).getActionCommand().toString());
         }
-
     }
 
     private void update() {
@@ -305,7 +297,6 @@ public class Quickpose implements Tool {
                     out.flush();
                 }
             }
-
             return response;
         });
         get("/assets/*", (request, response) -> {
@@ -316,12 +307,10 @@ public class Quickpose implements Tool {
                 response.status(404);
                 return response;
             }
-
             try (OutputStream out = response.raw().getOutputStream()) {
                 response.header("Content-Disposition", "inline; filename=" + request.params(":name"));
                 Files.copy(f.toPath(), out);
                 out.flush();
-
                 return response;
             }
         });
@@ -330,7 +319,6 @@ public class Quickpose implements Tool {
             if (f.exists()) {
                 if (f.delete()) {
                     response.status(200);
-                    //System.out.println("deleted file" + f.getAbsolutePath());
                     return response;
                 }
             }
@@ -340,20 +328,15 @@ public class Quickpose implements Tool {
         put("/assets/*", (request, response) -> {
             File tempFile = new File(assetsFolder.getAbsolutePath() + "/" + request.splat()[0]);
             request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
-            try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { // getPart needs to use
-                                                                                                // same "name" as input
-                                                                                                // field in form
+            try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { // getPart needs to use same "name" as input field in form
                 Files.copy(input, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
             logUploadInfo(request, tempFile.toPath(), logger);
             return "Success";
         });
-
     }
-
     private static void logUploadInfo(Request req, Path tempFile,org.slf4j.Logger logger ) throws IOException, ServletException {
-        logger.info("Uploaded file '" + getFileName(req.raw().getPart("uploaded_file")) + "' saved as '"
-                + tempFile.toAbsolutePath() + "'");
+        logger.info("Uploaded file '" + getFileName(req.raw().getPart("uploaded_file")) + "' saved as '"+ tempFile.toAbsolutePath() + "'");
     }
 
     private static String getFileName(Part part) {
@@ -373,8 +356,7 @@ public class Quickpose implements Tool {
         versionsCode.mkdir();
         assetsFolder = new File(versionsCode.toPath() + "/" + "assets");
         assetsFolder.mkdir();
-        File starterCodeFile = new File(
-                Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/QuickposeDefault.pde");
+        File starterCodeFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/QuickposeDefault.pde");
 
         if (editor.getMode().getIdentifier() == "jm.mode.replmode.REPLMode") {
             logger.info("Quickpose: Running in REPL Mode");
@@ -392,26 +374,12 @@ public class Quickpose implements Tool {
         versionsTree = new File(versionsCode.getAbsolutePath() + "/tree.json");
         if (!versionsTree.exists()) {
             logger.warn("Quickpose: No Existing Quickpose Session Detected - creating a new verison history");
-            if (starterCodeFile.exists() && editor.getText().length() < 10) {
-                try {
-                    // System.out.println(starterCodeFile.toPath() + ":" +
-                    // editor.getSketch().getMainFile().toPath());
-                    Files.move(starterCodeFile.toPath(), editor.getSketch().getMainFile().toPath(),
-                            StandardCopyOption.REPLACE_EXISTING);
-                    // base.getActiveEditor().getSketch().updateSketchCodes();
+            if (starterCodeFile.exists() && editor.getText().length() < 10) { //This is a hack
+                    copyFile(starterCodeFile, editor.getSketch().getMainFile());
                     editor.getSketch().reload();
                     editor.handleSave(false);
-                    //editor.
-                    // base.getActiveEditor().getMode().getToolbarMenu().
-                } catch (IOException e1) {
-                    // TODO Auto-generated catch block
-                    logger.error(e1.getMessage());
-                }
             }
-
-            String rootFolder = makeVersion(0);
-            Data root = new Data(rootFolder);
-            codeTree = new Tree(root);
+            codeTree = new Tree(new Data(makeVersion(0)));
             changeActiveVersion(0);
             writeJSONFromRoot();
         } else {
@@ -423,10 +391,8 @@ public class Quickpose implements Tool {
     private int fork(int id) {
         if (codeTree.idExists(id)) {
             Node parent = codeTree.getNode(id);
-
             if (parent != null) {
-                Data data = new Data("");
-                Node child = parent.addChild(data);
+                Node child = parent.addChild(new Data(""));
                 child.data.path = makeVersion(child.id);
                 changeActiveVersion(child.id);
                 writeJSONFromRoot();
@@ -451,7 +417,6 @@ public class Quickpose implements Tool {
                 }
             }
         }
-
         File versionFolder = new File(codeTree.getNode(id).data.path);
         File[] versionListing = versionFolder.listFiles();
         if (versionListing != null) {
@@ -504,7 +469,7 @@ public class Quickpose implements Tool {
             logger.error("Exception Occured in writeJSONFromRoot: " + e.toString());
         }
         try {
-            JSON.std.write(JSON.std.anyFrom(codeTree.getJSONSave(currentVersion)), versionsTree.getAbsoluteFile());
+            JSON.std.write(JSON.std.anyFrom(codeTree.getJSONSave(currentVersion,sketchFolder.getName())), versionsTree.getAbsoluteFile());
         } catch (IOException e) {
             logger.error("Error Saving JSON to File");
         }
@@ -525,20 +490,12 @@ public class Quickpose implements Tool {
             JSONArray nodes = graph.getJSONArray("Nodes");
             JSONArray edges = graph.getJSONArray("Edges");
 
-            for (int i = 0; i < nodes.length(); i++) {
-                // System.out.println("Node Id : " + nodes.getJSONObject(i).getString("id"));
-            }
-
             int rootInd = JSONSearch(nodes, 0);
             if (rootInd == -1) {
                 logger.error("Couldn't Find Root Node on Import");
             }
             Data root = new Data(nodes.getJSONObject(rootInd).getString("path"));
             importTree = new Tree(root);
-
-            for (int i = 0; i < nodes.length(); i++) {
-                // System.out.println("Node Id : " + nodes.getJSONObject(i).getString("id"));
-            }
 
             while (importTree.getList().size() < nodes.length() - 1) {
                 for (int i = 0; i < edges.length(); i++) {
