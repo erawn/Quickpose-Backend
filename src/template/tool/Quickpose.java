@@ -34,6 +34,7 @@ import static spark.Spark.*;
 import static spark.Filter.*;
 import com.fasterxml.jackson.jr.ob.JSON;
 
+import java.awt.Color;
 import java.io.*;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -154,9 +155,11 @@ public class Quickpose implements Tool {
         File render = new File(sketchFolder.toPath() + "/render.png");
         File storedRender = new File(versionsCode.getAbsolutePath() + "/_" + currentVersion + "/render.png");
         boolean fileModified = base.getActiveEditor().getSketch().isModified();
-        boolean renderModified = render.exists()
-                && (!storedRender.exists() || render.lastModified() != storedRender.lastModified());
+        boolean renderModified = render.exists() && (!storedRender.exists() || render.lastModified() != storedRender.lastModified());
 
+        codeTree.getNode(currentVersion).data.setCaretPosition(editor.getTextArea().getCaretPosition());
+        //System.out.println(editor.getTextArea().getCaretPosition());
+        //System.out.println(editor.getTextArea().);
         if (fileModified) {
             makeVersion(currentVersion);
             lastModified = render.lastModified();
@@ -172,6 +175,10 @@ public class Quickpose implements Tool {
                 renderLock.unlock();
             }
             lastModified = render.lastModified();
+        }
+
+        if (codeTree.getNode(currentVersion).children.size() != 0){
+            editor.statusNotice("Sketch is Read Only Because It Has Child Nodes");
         }
     }
 
@@ -208,7 +215,16 @@ public class Quickpose implements Tool {
         });
         get("/versions.json", (request, response) -> {
             response.type("application/json");
-            return codeTree.getJSONSave(currentVersion, sketchFolder.getName());
+            try{
+                String json = codeTree.getJSONSave(currentVersion, sketchFolder.getName());
+                //System.out.println(json);
+                return json;
+            }catch(Error e){
+                logger.error(e.getMessage());
+            }
+            response.status(500);
+            return response;
+            
         });
         get("/fork/:id", (request, response) -> {
             logger.info("Fork ID:" + Integer.parseInt(request.params(":id")));
@@ -420,23 +436,36 @@ public class Quickpose implements Tool {
         File versionFolder = new File(codeTree.getNode(id).data.path);
         File[] versionListing = versionFolder.listFiles();
         if (versionListing != null) {
+            renderLock.lock();
             for (File f : versionListing) {
                 if (FilenameUtils.isExtension(f.getName(), "pde") || f.getName() == "render.png") {
                     File newFile = new File(sketchFolder.getAbsolutePath() + "/" + f.getName());
                     copyFile(f, newFile);
                 }
             }
+            renderLock.unlock();
         }
         // Something here breaks REPL mode
-        if (codeTree.getNode(id).children.size() == 0) {
+        if (codeTree.getNode(id).children.size() == 0){
             // editor.getSketch().getMainFile().setWritable(true);
+            editor.getTextArea().setEditable(true);
+            editor.getTextArea().getPainter().setBackground(Color.WHITE);
+            //editor.getConsole().setName("Dont");
+            editor.statusEmpty();
+            //editor.repaint();
         } else {
             // editor.getSketch().getMainFile().setWritable(false);
             // editor.getSketch().getMainFile().setReadOnly();
+            editor.getTextArea().setEditable(false);
+            editor.statusNotice("Sketch is Read Only Because It Has Child Nodes");
+            editor.getTextArea().getPainter().setBackground(Color.LIGHT_GRAY);
+            //editor.repaint();
         }
         // base.getActiveEditor().getSketch().updateSketchCodes();
         editor.getSketch().reload();
         editor.handleSave(true);
+        editor.getTextArea().setCaretPosition(codeTree.getNode(id).data.caretPosition);
+        //System.out.println("setcaretto"+codeTree.getNode(id).data.caretPosition);
         currentVersion = id;
         // System.out.println("Switched version to "+ id );
     }
@@ -450,11 +479,16 @@ public class Quickpose implements Tool {
         File[] dirListing = sketchFolder.listFiles();
         if (dirListing != null) {
             for (File f : dirListing) {
-                if (FilenameUtils.equals(f.getName(), "render.png") ||
-                        FilenameUtils.isExtension(f.getName(), "pde")) {
+                if (FilenameUtils.isExtension(f.getName(), "pde")) {
                     File newFile = new File(folder.getAbsolutePath() + "/" + f.getName());
                     copyFile(f, newFile);
                 }
+                renderLock.lock();
+                if (FilenameUtils.equals(f.getName(), "render.png")) {
+                    File newFile = new File(folder.getAbsolutePath() + "/" + f.getName());
+                    copyFile(f, newFile);
+                }
+                renderLock.unlock();
             }
         }
         return folder.getAbsolutePath();
@@ -495,6 +529,7 @@ public class Quickpose implements Tool {
                 logger.error("Couldn't Find Root Node on Import");
             }
             Data root = new Data(nodes.getJSONObject(rootInd).getString("path"));
+            root.setCaretPosition(nodes.getJSONObject(rootInd).getInt("caretPosition"));
             importTree = new Tree(root);
 
             while (importTree.getList().size() < nodes.length() - 1) {
@@ -505,6 +540,7 @@ public class Quickpose implements Tool {
                         Node parent = importTree.getNode(source);
                         int childInd = JSONSearch(nodes, target);
                         Data data = new Data(nodes.getJSONObject(childInd).getString("path"));
+                        data.setCaretPosition(nodes.getJSONObject(childInd).getInt("caretPosition"));
                         Node child = parent.setChild(data, target);
                         logger.info("created child : " + target + " from parent : "+ source);
                     }

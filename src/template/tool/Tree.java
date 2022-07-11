@@ -119,6 +119,7 @@ public class Tree {
 			jRoot.put("id", Integer.toString(root.id));
 			jRoot.put("label", "Node" + Integer.toString(root.id));
 			jRoot.put("path", root.data.path);
+			jRoot.put("caretPosition",root.data.getCaretPosition());
 			Nodes.put(jRoot);
 			for (int j = 0; j < root.children.size(); j++) {
 				Node c = root.children.get(j);
@@ -134,6 +135,7 @@ public class Tree {
 				node.put("id", Integer.toString(n.id));
 				node.put("label", "Node" + Integer.toString(n.id));
 				node.put("path", n.data.path);
+				node.put("caretPosition", n.data.getCaretPosition());
 				Nodes.put(node);
 				for (int j = 0; j < n.children.size(); j++) {
 					Node c = n.children.get(j);
@@ -150,8 +152,8 @@ public class Tree {
 			Graph.put("CurrentNode", currentNodeId);
 			Graph.put("ProjectName", projectName);
 			return Graph.toString();
-		} catch (Exception e) {
-			System.out.println("Exception Occured : getJSON()");
+		} catch (Error e) {
+			System.out.println(e.getMessage()+"Exception Occured : getJSON()");
 		}
 		return "";
 	}
