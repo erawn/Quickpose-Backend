@@ -251,9 +251,12 @@ public class Quickpose implements Tool {
             return sketchFolder.getName();
         });
         post("/tldrfile", (request, response) -> {
-            File f = new File(versionsCode.toPath() + "/quickpose.tldr");
+            File dest = new File(versionsCode.toPath() + "/quickpose.tldr");
+            File f = new File(versionsCode.toPath() + "/quickposeTemp.tldr");
             tldrLock.lock();
             try {
+                String proj = request.params("ProjectName");  //request.attribute("ProjectName");
+                System.out.println("projectname:"+proj);
                 request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
                 // getPart needs to use same "name" as input field in form
                 try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
@@ -369,7 +372,7 @@ public class Quickpose implements Tool {
         editor = base.getActiveEditor();
         sketchFolder = editor.getSketch().getFolder();
         String sketchPath = sketchFolder.getAbsolutePath();
-        versionsCode = new File(sketchPath + "/" + "versions_code");
+        versionsCode = new File(sketchPath + "/" + "Quickpose");
         versionsCode.mkdir();
         assetsFolder = new File(versionsCode.toPath() + "/" + "assets");
         assetsFolder.mkdir();
@@ -495,7 +498,8 @@ public class Quickpose implements Tool {
                 renderLock.unlock();
             }
         }
-        return folder.getAbsolutePath();
+        System.out.println(folder.toPath());
+        return folder.getPath();
     }
     private void writeJSONFromRoot() {
         if (versionsTree.exists()) {

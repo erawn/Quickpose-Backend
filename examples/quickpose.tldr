@@ -3,7 +3,7 @@
   "fileHandle": null,
   "document": {
     "id": "doc",
-    "name": null,
+    "name": "null",
     "version": 15.3,
     "pages": {
       "page": {
@@ -38,7 +38,7 @@
               0.5,
               0.5
             ],
-            "imgLink": "http://127.0.0.1:8080/image/0?1657533284023",
+            "imgLink": "http://127.0.0.1:8080/image/0?1657586376594",
             "isCurrent": true,
             "hasLoaded": false
           },
@@ -105,8 +105,8 @@
             "parentId": "page",
             "childIndex": 3,
             "point": [
-              380.7340995815372,
-              158.16244710651264
+              380.73,
+              142.62
             ],
             "rotation": 0,
             "text": "This is your current version",
@@ -115,7 +115,7 @@
               "size": "small",
               "isFilled": true,
               "dash": "draw",
-              "scale": 1,
+              "scale": 1.4201834992662306,
               "font": "script",
               "textAlign": "middle"
             }
@@ -205,8 +205,8 @@
             "parentId": "page",
             "childIndex": 6,
             "point": [
-              86.44,
-              197.21
+              34.2,
+              193.48
             ],
             "rotation": 0,
             "text": "To Fork A Version, \nShift+Click it! ",
@@ -215,7 +215,7 @@
               "size": "small",
               "isFilled": true,
               "dash": "draw",
-              "scale": 1,
+              "scale": 1.3277933049046549,
               "font": "script",
               "textAlign": "middle"
             }
@@ -227,8 +227,8 @@
             "parentId": "page",
             "childIndex": 7,
             "point": [
-              12.45,
-              340.19
+              -97.55,
+              347.28
             ],
             "rotation": 0,
             "text": "This canvas works as you'd expect:",
@@ -237,7 +237,7 @@
               "size": "small",
               "isFilled": true,
               "dash": "draw",
-              "scale": 1,
+              "scale": 1.3722236157562946,
               "font": "script",
               "textAlign": "middle"
             }
@@ -249,8 +249,8 @@
             "parentId": "page",
             "childIndex": 8,
             "point": [
-              16.97,
-              393.05
+              -63.95,
+              421.17
             ],
             "rotation": 0,
             "text": "With Stickies",
@@ -259,7 +259,7 @@
               "size": "small",
               "isFilled": true,
               "dash": "draw",
-              "scale": 1,
+              "scale": 0.7986024517588977,
               "font": "script",
               "textAlign": "middle"
             }
@@ -271,8 +271,8 @@
             "parentId": "page",
             "childIndex": 9,
             "point": [
-              245.73,
-              391.28
+              150.35,
+              410.1
             ],
             "rotation": 0,
             "text": "Images",
@@ -281,7 +281,7 @@
               "size": "small",
               "isFilled": true,
               "dash": "draw",
-              "scale": 1,
+              "scale": 0.806464818507049,
               "font": "script",
               "textAlign": "middle"
             }
@@ -293,8 +293,8 @@
             "parentId": "page",
             "childIndex": 10,
             "point": [
-              417.15,
-              388.87
+              288.22,
+              417.15
             ],
             "rotation": 0,
             "text": "Scribbles",
@@ -315,8 +315,8 @@
             "parentId": "page",
             "childIndex": 11,
             "point": [
-              598.26,
-              389.21
+              345.29,
+              535.46
             ],
             "rotation": 0,
             "text": "And Shapes!",
@@ -337,8 +337,8 @@
             "parentId": "page",
             "childIndex": 12,
             "point": [
-              -18.06,
-              470.94
+              -65.32,
+              469.7
             ],
             "size": [
               200,
@@ -363,8 +363,8 @@
             "parentId": "page",
             "childIndex": 13,
             "point": [
-              196.89,
-              436.47
+              107.96,
+              444.55
             ],
             "size": [
               142.49,
@@ -387,8 +387,8 @@
             "parentId": "page",
             "childIndex": 14,
             "point": [
-              382.08,
-              453.61
+              273.2,
+              458.26
             ],
             "rotation": 0,
             "style": {
@@ -1149,8 +1149,8 @@
             "parentId": "page",
             "childIndex": 15,
             "point": [
-              590.67,
-              465.99
+              278.98,
+              589.33
             ],
             "size": [
               106.74,
@@ -1177,8 +1177,8 @@
             "parentId": "page",
             "childIndex": 16,
             "point": [
-              621.56,
-              429.79
+              309.87,
+              553.13
             ],
             "size": [
               104.68,
@@ -1197,6 +1197,226 @@
               0.5,
               0.5
             ]
+          },
+          "3a68eedd-e7ee-431f-008e-20f5f1bff3c8": {
+            "id": "3a68eedd-e7ee-431f-008e-20f5f1bff3c8",
+            "type": "text",
+            "name": "Text",
+            "parentId": "page",
+            "childIndex": 17,
+            "point": [
+              -35.76,
+              81.12
+            ],
+            "rotation": 6.135308735108061,
+            "text": " Welcome To Quickpose!",
+            "style": {
+              "color": "black",
+              "size": "small",
+              "isFilled": false,
+              "dash": "draw",
+              "scale": 2.852872360976722,
+              "font": "script",
+              "textAlign": "middle"
+            }
+          },
+          "3d50c019-8e2d-42cc-22a9-d5e82327a337": {
+            "id": "3d50c019-8e2d-42cc-22a9-d5e82327a337",
+            "type": "text",
+            "name": "Text",
+            "parentId": "page",
+            "childIndex": 18,
+            "point": [
+              474.02,
+              414.86
+            ],
+            "rotation": 0,
+            "text": "Quickpose is a version control tool\nto help you manage, annotate, and explore \nyour Processing Sketches",
+            "style": {
+              "color": "black",
+              "size": "small",
+              "isFilled": false,
+              "dash": "dashed",
+              "scale": 0.7947980432298819,
+              "font": "script",
+              "textAlign": "middle"
+            }
+          },
+          "deb684dd-5d4b-4014-226b-8d738c7fdf18": {
+            "id": "deb684dd-5d4b-4014-226b-8d738c7fdf18",
+            "type": "arrow",
+            "name": "Arrow",
+            "parentId": "page",
+            "childIndex": 19,
+            "point": [
+              -126.9,
+              590.91
+            ],
+            "rotation": 0,
+            "bend": -0.00008358405697666417,
+            "handles": {
+              "start": {
+                "id": "start",
+                "index": 0,
+                "point": [
+                  0,
+                  0
+                ],
+                "canBind": true
+              },
+              "end": {
+                "id": "end",
+                "index": 1,
+                "point": [
+                  0.07,
+                  119.64
+                ],
+                "canBind": true
+              },
+              "bend": {
+                "id": "bend",
+                "index": 2,
+                "point": [
+                  0.04,
+                  59.82
+                ]
+              }
+            },
+            "decorations": {},
+            "style": {
+              "color": "black",
+              "size": "small",
+              "isFilled": false,
+              "dash": "dashed",
+              "scale": 1
+            },
+            "label": "",
+            "labelPoint": [
+              0.5,
+              0.5
+            ]
+          },
+          "f9bb7b4f-dfc2-4bf0-1401-cdf91595fa77": {
+            "id": "f9bb7b4f-dfc2-4bf0-1401-cdf91595fa77",
+            "type": "text",
+            "name": "Text",
+            "parentId": "page",
+            "childIndex": 20,
+            "point": [
+              -321.13,
+              625.2
+            ],
+            "rotation": 5.929057407204269,
+            "text": "Pst, you can delete all this :)   ",
+            "style": {
+              "color": "black",
+              "size": "small",
+              "isFilled": false,
+              "dash": "dashed",
+              "scale": 0.6306326063656474,
+              "font": "script",
+              "textAlign": "middle"
+            }
+          },
+          "4338ca1e-cb90-42de-02e0-bfb708ba78a6": {
+            "id": "4338ca1e-cb90-42de-02e0-bfb708ba78a6",
+            "type": "arrow",
+            "name": "Arrow",
+            "parentId": "page",
+            "childIndex": 21,
+            "point": [
+              -233.06,
+              642.24
+            ],
+            "rotation": 0,
+            "bend": -0.28129137532173815,
+            "handles": {
+              "start": {
+                "id": "start",
+                "index": 0,
+                "point": [
+                  -4.77,
+                  16.76
+                ],
+                "canBind": true
+              },
+              "end": {
+                "id": "end",
+                "index": 1,
+                "point": [
+                  88.26,
+                  -3.35
+                ],
+                "canBind": true
+              },
+              "bend": {
+                "id": "bend",
+                "index": 2,
+                "point": [
+                  44.57,
+                  19.79
+                ]
+              }
+            },
+            "decorations": {
+              "end": "arrow"
+            },
+            "style": {
+              "color": "white",
+              "size": "small",
+              "isFilled": false,
+              "dash": "draw",
+              "scale": 1
+            },
+            "label": "",
+            "labelPoint": [
+              0.5,
+              0.5
+            ]
+          },
+          "c7fc3de6-306a-443e-166a-25fe1bed4c63": {
+            "id": "c7fc3de6-306a-443e-166a-25fe1bed4c63",
+            "type": "text",
+            "name": "Text",
+            "parentId": "page",
+            "childIndex": 22,
+            "point": [
+              550.26,
+              656.2
+            ],
+            "rotation": 0,
+            "text": "For info and help, check out \nhttps://github.com/erawn/Quickpose",
+            "style": {
+              "color": "white",
+              "size": "small",
+              "isFilled": false,
+              "dash": "draw",
+              "scale": 0.7107359759098294,
+              "font": "script",
+              "textAlign": "middle"
+            }
+          },
+          "f1e66c58-9903-4b7e-10c9-05d0abcc7b75": {
+            "id": "f1e66c58-9903-4b7e-10c9-05d0abcc7b75",
+            "type": "text",
+            "name": "Text",
+            "parentId": "page",
+            "childIndex": 23,
+            "point": [
+              495.36,
+              517.54
+            ],
+            "rotation": 0,
+            "text": "All your work is automatically saved \nto Processing, so just focus on exploring!",
+            "style": {
+              "color": "white",
+              "size": "small",
+              "isFilled": false,
+              "dash": "draw",
+              "scale": 0.8535651617397063,
+              "font": "script",
+              "textAlign": "middle"
+            }
           }
         },
         "bindings": {}
@@ -1208,10 +1428,10 @@
         "selectedIds": [],
         "camera": {
           "point": [
-            16.88,
-            -71.71
+            167.01,
+            -40.27
           ],
-          "zoom": 1.0618056107024645
+          "zoom": 1.396491677561549
         },
         "editingId": null
       }
@@ -1231,7 +1451,7 @@
   },
   "assets": {
     "simData": "{\"nodes\":[{\"path\":\"/Users/erawn/Documents/Processing/sketch_220711j/versions_code/_0\",\"caretPosition\":145,\"id\":\"0\",\"label\":\"Node0\",\"index\":0,\"x\":81.4,\"y\":62,\"vy\":0,\"vx\":0,\"r\":6,\"fx\":81.4,\"fy\":62}],\"links\":[]}",
-    "alpha": "1.3361247793559473e-36",
+    "alpha": "1.0786640696556006e-74",
     "centerPoint": "[377,280]",
     "c97b8e1e-2a63-4461-129a-63fc50f0adc7": {
       "id": "c97b8e1e-2a63-4461-129a-63fc50f0adc7",
