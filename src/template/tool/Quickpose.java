@@ -92,6 +92,7 @@ public class Quickpose implements Tool {
     boolean setup = false;
     private File sketchFolder;
     private File assetsFolder;
+    private File archiveFolder;
     private File versionsCode;
     private File versionsImages;
     private File versionsTree;
@@ -268,6 +269,23 @@ public class Quickpose implements Tool {
             logUploadInfo(request, f.toPath(), logger);
             return "Success";
         });
+        post("/tldrfile_backup", (request, response) -> {
+            File f = new File(archiveFolder.toPath() + "/quickpose"+".tldr");
+            tldrLock.lock();
+            try {
+                String proj = request.params("ProjectName");  //request.attribute("ProjectName");
+                System.out.println("projectname:"+proj);
+                request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
+                // getPart needs to use same "name" as input field in form
+                try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
+                    Files.copy(input, f.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                }
+            } finally {
+                tldrLock.unlock();
+            }
+            logUploadInfo(request, f.toPath(), logger);
+            return "Success";
+        });
         get("/tldrfile", (request, response) -> {
             File f = new File(versionsCode.toPath() + "/quickpose.tldr");
             if (f.exists()) {
@@ -376,6 +394,8 @@ public class Quickpose implements Tool {
         versionsCode.mkdir();
         assetsFolder = new File(versionsCode.toPath() + "/" + "assets");
         assetsFolder.mkdir();
+        archiveFolder = new File(versionsCode.toPath() + "/" + "archive");
+        archiveFolder.mkdir();
         File starterCodeFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/QuickposeDefault.pde");
         File starterCatFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/cat.png");
         File startertldr = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/quickpose.tldr");
