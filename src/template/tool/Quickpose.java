@@ -43,6 +43,8 @@ import java.net.URL;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.CopyOption;
+import java.util.logging.FileHandler;
+import java.util.logging.SimpleFormatter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -67,6 +69,8 @@ import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 
+import java.util.logging.*;
+
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -84,6 +88,9 @@ import processing.app.Sketch;
 import processing.app.SketchCode;
 import processing.app.tools.Tool;
 import processing.app.ui.Editor;
+
+import java.time.LocalDateTime;  
+
 
 // when creating a tool, the name of the main class which implements Tool must
 // be the same as the value defined for project.name in your build.properties
@@ -111,7 +118,10 @@ public class Quickpose implements Tool {
 
     private org.slf4j.Logger logger = LoggerFactory.getLogger(Quickpose.class);
 
-    
+    private java.util.logging.Logger archiver = java.util.logging.Logger.getLogger("ArchiveLog");  
+
+    FileHandler logFileHandler;  
+
     Runnable updateLoop = new Runnable() {
         public void run() {
             update();
@@ -160,8 +170,7 @@ public class Quickpose implements Tool {
         boolean renderModified = render.exists() && (!storedRender.exists() || render.lastModified() != storedRender.lastModified());
 
         codeTree.getNode(currentVersion).data.setCaretPosition(editor.getTextArea().getCaretPosition());
-        //System.out.println(editor.getTextArea().getCaretPosition());
-        //System.out.println(editor.getTextArea().);
+
         if (fileModified) {
             makeVersion(currentVersion);
             lastModified = render.lastModified();
@@ -235,12 +244,14 @@ public class Quickpose implements Tool {
                 return codeTree.getJSONSave(currentVersion, sketchFolder.getName());
             }
             response.status(500);
+            archiver.info("Fork"+Integer.parseInt(request.params(":id")));
             return response;
         });
         get("/select/:id", (request, response) -> {
             logger.info("Selected ID:"+Integer.parseInt(request.params(":id")));
             currentVersion = Integer.parseInt(request.params(":id"));
             changeActiveVersion(currentVersion);
+            archiver.info("Select"+Integer.parseInt(request.params(":id")));
             return currentVersion;
         });
         get("/currentVersion", (request, response) -> {
@@ -256,29 +267,43 @@ public class Quickpose implements Tool {
             File f = new File(versionsCode.toPath() + "/quickposeTemp.tldr");
             tldrLock.lock();
             try {
-                String proj = request.params("ProjectName");  //request.attribute("ProjectName");
-                System.out.println("projectname:"+proj);
-                request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
-                // getPart needs to use same "name" as input field in form
-                try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
-                    Files.copy(input, f.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                String proj = request.queryParams("ProjectName");
+                if(proj.contentEquals(sketchFolder.getName())){
+                    request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
+                    // getPart needs to use same "name" as input field in form
+                    try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
+                        Files.copy(input, dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }else{
+                    logger.error("Quickpose: .tldr document name doesn't match project, copying to quickposeTemp.tldr instead");
+                    request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
+                    // getPart needs to use same "name" as input field in form
+                    try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
+                        Files.copy(input, f.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    }
                 }
             } finally {
                 tldrLock.unlock();
             }
-            logUploadInfo(request, f.toPath(), logger);
+            //logUploadInfo(request, f.toPath(), logger);
+            return "Success";
+        });
+        post("/log", (request, response) -> {
+            System.out.println(request.body());
+            archiver.info(request.body());
             return "Success";
         });
         post("/tldrfile_backup", (request, response) -> {
-            File f = new File(archiveFolder.toPath() + "/quickpose"+".tldr");
+            File f = new File(archiveFolder.toPath() + "/quickpose"+LocalDateTime.now().toString() +".tldr");
             tldrLock.lock();
             try {
-                String proj = request.params("ProjectName");  //request.attribute("ProjectName");
-                System.out.println("projectname:"+proj);
+                String proj = request.queryParams("ProjectName"); //request.attribute("ProjectName");
+                if(proj.contentEquals(sketchFolder.getName())){
                 request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
                 // getPart needs to use same "name" as input field in form
-                try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
-                    Files.copy(input, f.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
+                        Files.copy(input, f.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    }
                 }
             } finally {
                 tldrLock.unlock();
@@ -369,6 +394,7 @@ public class Quickpose implements Tool {
             try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { // getPart needs to use same "name" as input field in form
                 Files.copy(input, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
+            archiver.info("Asset Upload"+request.splat()[0]);
             logUploadInfo(request, tempFile.toPath(), logger);
             return "Success";
         });
@@ -399,8 +425,26 @@ public class Quickpose implements Tool {
         File starterCodeFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/QuickposeDefault.pde");
         File starterCatFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/cat.png");
         File startertldr = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/quickpose.tldr");
+
+        try {  
+
+            // This block configure the logger with handler and formatter  
+            logFileHandler = new FileHandler(archiveFolder.getPath()+"/quickpose.log",true);  
+            archiver.addHandler(logFileHandler);
+            SimpleFormatter formatter = new SimpleFormatter();  
+            logFileHandler.setFormatter(formatter);  
+            archiver.setUseParentHandlers(false);
+    
+        } catch (SecurityException e) {  
+            e.printStackTrace();  
+        } catch (IOException e) {  
+            e.printStackTrace();  
+        }  
+
+
         if (editor.getMode().getIdentifier() == "jm.mode.replmode.REPLMode") {
             logger.info("Quickpose: Running in REPL Mode");
+            archiver.info("Start Session in REPL Mode");
         } else {
             logger.warn("Quickpose: Please Run in REPL Mode!");
             System.out.println(base.getModeList());
