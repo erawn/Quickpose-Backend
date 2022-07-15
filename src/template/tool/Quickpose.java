@@ -29,20 +29,14 @@
 package template.tool;
 
 //import com.fasterxml.jackson.databind.*;
-import spark.*;
 import static spark.Spark.*;
-import static spark.Filter.*;
 import com.fasterxml.jackson.jr.ob.JSON;
 
 import java.awt.Color;
 import java.io.*;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.OutputStream;
-import java.net.URL;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.CopyOption;
 import java.util.logging.FileHandler;
 import java.util.logging.SimpleFormatter;
 import java.nio.file.Files;
@@ -55,21 +49,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import javax.swing.text.BadLocationException;
-import javax.servlet.*;
-import javax.servlet.http.*;
 
-//import org.slf4j.Logger;
-// import org.slf4j.impl.SimpleLoggerFactory;
-// import org.slf4j.impl.SimpleLogger;
-// import ch.qos.logback.classic.Level;
-// import ch.qos.logback.classic.Logger;
+import javax.servlet.*;
 
 import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-
-import java.util.logging.*;
 
 
 import org.apache.commons.io.FileUtils;
@@ -77,8 +62,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import org.eclipse.jetty.util.log.Slf4jLog;
 
 import processing.app.Base;
 import processing.app.Language;
@@ -117,10 +100,13 @@ public class Quickpose implements Tool {
     private Lock tldrLock = new ReentrantLock();
 
     private org.slf4j.Logger logger = LoggerFactory.getLogger(Quickpose.class);
+    
 
     private java.util.logging.Logger archiver = java.util.logging.Logger.getLogger("ArchiveLog");  
 
-    FileHandler logFileHandler;  
+    FileHandler logFileHandler; 
+    
+
 
     Runnable updateLoop = new Runnable() {
         public void run() {
@@ -142,6 +128,11 @@ public class Quickpose implements Tool {
        
         Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         root.setLevel(Level.ERROR);
+
+        Logger hotswap = (Logger)LoggerFactory.getLogger("org.hotswap.agent.HotswapAgent");
+        hotswap.setLevel(Level.ERROR);
+        Logger hotswap2 = (Logger)LoggerFactory.getLogger("org.hotswap.agent.config.PluginRegistry");
+        hotswap2.setLevel(Level.ERROR);
 
         if (base.getActiveEditor().getSketch().isUntitled()) {
             Messages.showMessage("Quickpose: Unsaved Sketch",
@@ -268,14 +259,14 @@ public class Quickpose implements Tool {
             tldrLock.lock();
             try {
                 String proj = request.queryParams("ProjectName");
-                if(proj.contentEquals(sketchFolder.getName())){
+                if(proj.contentEquals(sketchFolder.getName()) || proj.contentEquals("null")){
                     request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
                     // getPart needs to use same "name" as input field in form
                     try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
                         Files.copy(input, dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
                     }
                 }else{
-                    logger.error("Quickpose: .tldr document name doesn't match project, copying to quickposeTemp.tldr instead");
+                    System.out.println("Quickpose: Please reload browser window : .tldr document name doesn't match project, copying to quickposeTemp.tldr instead");
                     request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
                     // getPart needs to use same "name" as input field in form
                     try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
@@ -285,16 +276,15 @@ public class Quickpose implements Tool {
             } finally {
                 tldrLock.unlock();
             }
-            //logUploadInfo(request, f.toPath(), logger);
             return "Success";
         });
         post("/log", (request, response) -> {
-            System.out.println(request.body());
+            //System.out.println(request.body());
             archiver.info(request.body());
             return "Success";
         });
         post("/tldrfile_backup", (request, response) -> {
-            File f = new File(archiveFolder.toPath() + "/quickpose"+LocalDateTime.now().toString() +".tldr");
+            File f = new File(archiveFolder.toPath() + "/quickpose"+LocalDateTime.now().toString().replace(':', '-') +".tldr");
             tldrLock.lock();
             try {
                 String proj = request.queryParams("ProjectName"); //request.attribute("ProjectName");
@@ -308,7 +298,6 @@ public class Quickpose implements Tool {
             } finally {
                 tldrLock.unlock();
             }
-            logUploadInfo(request, f.toPath(), logger);
             return "Success";
         });
         get("/tldrfile", (request, response) -> {
@@ -395,21 +384,8 @@ public class Quickpose implements Tool {
                 Files.copy(input, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
             archiver.info("Asset Upload"+request.splat()[0]);
-            logUploadInfo(request, tempFile.toPath(), logger);
             return "Success";
         });
-    }
-    private static void logUploadInfo(Request req, Path tempFile,org.slf4j.Logger logger ) throws IOException, ServletException {
-        logger.info("Uploaded file '" + getFileName(req.raw().getPart("uploaded_file")) + "' saved as '"+ tempFile.toAbsolutePath() + "'");
-    }
-
-    private static String getFileName(Part part) {
-        for (String cd : part.getHeader("content-disposition").split(";")) {
-            if (cd.trim().startsWith("filename")) {
-                return cd.substring(cd.indexOf('=') + 1).trim().replace("\"", "");
-            }
-        }
-        return null;
     }
 
     private void dataSetup() {
@@ -562,8 +538,8 @@ public class Quickpose implements Tool {
                 renderLock.unlock();
             }
         }
-        System.out.println(folder.toPath());
-        return folder.getPath();
+        String relPath = sketchFolder.toPath().relativize(folder.toPath()).toString();
+        return relPath;
     }
     private void writeJSONFromRoot() {
         if (versionsTree.exists()) {

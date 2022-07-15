@@ -1563,42 +1563,6 @@
           }
         },
         "bindings": {
-          "89ec82bf-0524-4bb7-23c6-687dd444d93d": {
-            "id": "89ec82bf-0524-4bb7-23c6-687dd444d93d",
-            "type": "arrow",
-            "fromId": "9a4c69d0-d51b-4031-00ec-01424e9427a8",
-            "toId": "c1c4ccd6-4932-4cf1-39cb-3aa3bb59ffac",
-            "handleId": "end",
-            "point": [
-              0.26,
-              0.5
-            ],
-            "distance": 8
-          },
-          "72b69f8e-f23d-4a43-1971-14c71545d288": {
-            "id": "72b69f8e-f23d-4a43-1971-14c71545d288",
-            "type": "arrow",
-            "fromId": "9a4c69d0-d51b-4031-00ec-01424e9427a8",
-            "toId": "node0",
-            "handleId": "start",
-            "point": [
-              0.76,
-              0.49
-            ],
-            "distance": 8
-          },
-          "9a94b224-3b9a-4444-13cf-32bd12b40c76": {
-            "id": "9a94b224-3b9a-4444-13cf-32bd12b40c76",
-            "type": "arrow",
-            "fromId": "e769c9b5-36aa-4e30-16af-db180e6044cc",
-            "toId": "c1c4ccd6-4932-4cf1-39cb-3aa3bb59ffac",
-            "handleId": "end",
-            "point": [
-              0.87,
-              0.65
-            ],
-            "distance": 10.08834354180696
-          }
         }
       }
     },
@@ -1630,7 +1594,7 @@
     }
   },
   "assets": {
-    "simData": "{\"nodes\":[{\"path\":\"/Users/erawn/Documents/Processing/sketch_220711j/versions_code/_0\",\"caretPosition\":145,\"id\":\"0\",\"label\":\"Node0\",\"index\":0,\"x\":81.4,\"y\":62,\"vy\":0,\"vx\":0,\"r\":6,\"fx\":81.4,\"fy\":62}],\"links\":[]}",
+    "simData": "{\"nodes\":[{\"path\":\"/Quickpose/_0\",\"caretPosition\":145,\"id\":\"0\",\"label\":\"Node0\",\"index\":0,\"x\":81.4,\"y\":62,\"vy\":0,\"vx\":0,\"r\":6,\"fx\":81.4,\"fy\":62}],\"links\":[]}",
     "alpha": "1.998980656141413e-108",
     "centerPoint": "[377,280]",
     "c97b8e1e-2a63-4461-129a-63fc50f0adc7": {
