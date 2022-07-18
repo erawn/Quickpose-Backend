@@ -43,6 +43,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -59,6 +60,7 @@ import ch.qos.logback.classic.Logger;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -83,6 +85,7 @@ public class Quickpose implements Tool {
     private File sketchFolder;
     private File assetsFolder;
     private File archiveFolder;
+    private File exportFolder;
     private File versionsCode;
     private File versionsImages;
     private File versionsTree;
@@ -186,6 +189,8 @@ public class Quickpose implements Tool {
 
     private void networkSetup() {
         port(serverPort);
+        int maxThreads = 8;
+        threadPool(maxThreads);
         System.out.println("Quickpose: Starting server on port:" + serverPort);
         System.out.println("Open ##tool.url## in a Browser to Start");
         options("/*",
@@ -210,6 +215,7 @@ public class Quickpose implements Tool {
 
         before((request, response) -> response.header("Access-Control-Allow-Origin", "*"));
 
+        webSocket("/thumbnail", ThumbnailWebSocket.class);
         // https://stackoverflow.com/questions/47328754/with-java-spark-how-do-i-send-a-html-file-as-a-repsonse
         get("/", (request, response) -> {
             response.redirect("https://quickpose.vercel.app/");
@@ -325,6 +331,39 @@ public class Quickpose implements Tool {
                 return response;
             }
         });
+        post("/exportbycolor", (request, response) -> {
+            try {
+                String ids = request.queryParams("ids");
+                String color = request.queryParams("color");
+                if(!ids.contentEquals("")){
+                    String [] versionsStrings = ids.split(",");
+                    ArrayList<Integer> versions = new ArrayList<Integer>();
+                    for(String s : versionsStrings){
+                        versions.add(Integer.valueOf(s));
+                    }
+                    File export = new File(exportFolder.toPath()+"/"+color+"_export_"+LocalDateTime.now().toString().replace(':', '-'));
+                    export.mkdir();
+
+                    for(Integer i : versions){
+                        File versionFolder = new File(versionsCode.getAbsolutePath() + "/_" + i);
+                        if(versionFolder.exists()){
+                            File destFolder = new File(export + "/_" + i);
+                            destFolder.mkdir();
+                            FileUtils.copyDirectory(versionFolder, destFolder);
+                            for(File f : versionFolder.listFiles()){
+                                if (FilenameUtils.equals(f.getName(), "render.png")) {
+                                    File newFile = new File(export + "/" + "render"+i+".png");
+                                    copyFile(f, newFile);
+                                }
+                            }
+                        }
+                    }  
+                }
+            } finally {
+            }
+            return "Success";
+        });
+
         get("/image/:id", (request, response) -> {
             File f = new File(versionsCode.getAbsolutePath() + "/_" + request.params(":id") + "/render.png");
             if (f.exists()) {
@@ -398,6 +437,8 @@ public class Quickpose implements Tool {
         assetsFolder.mkdir();
         archiveFolder = new File(versionsCode.toPath() + "/" + "archive");
         archiveFolder.mkdir();
+        exportFolder = new File(versionsCode.toPath() + "/" + "exports");
+        exportFolder.mkdir();
         File starterCodeFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/QuickposeDefault.pde");
         File starterCatFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/cat.png");
         File startertldr = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/quickpose.tldr");
@@ -625,3 +666,4 @@ public class Quickpose implements Tool {
         }
     }
 }
+
