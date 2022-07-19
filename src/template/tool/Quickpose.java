@@ -60,8 +60,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import net.lingala.zip4j.model.ZipParameters;
 import net.lingala.zip4j.model.enums.CompressionLevel;
 import net.lingala.zip4j.ZipFile;
-
-
+import net.lingala.zip4j.exception.ZipException;
 
 import javax.servlet.*;
 
@@ -147,14 +146,14 @@ public class Quickpose implements Tool {
 
     public void run() {
 
-        
+
         Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         root.setLevel(Level.INFO);
-
         archiver.setUseParentHandlers(false);
 
         if (base.getActiveEditor().getSketch().isUntitled()) {
-            editor.statusMessage("Quickpose: Unsaved Sketch. Please Save Sketch and Run Again",EditorStatus.ERROR);
+            System.out.println("2");
+            Messages.showMessage("Quickpose: Unsaved Sketch","Quickpose: Unsaved Sketch -- Please Save Sketch and Run Again");
             base.getActiveEditor().handleSave(false);
 
         } else {
@@ -316,7 +315,8 @@ private void update() {
                         Files.copy(input, dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
                     }
                 }else{
-                    editor.statusMessage("Quickpose: old tldr file in browser, please reload browser window",EditorStatus.WARNING);
+                    editor.statusNotice("Quickpose: old tldr file in browser, please reload browser window");
+                    //editor.statusMessage("Quickpose: old tldr file in browser, please reload browser window",EditorStatus.WARNING);
                     request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
                     // getPart needs to use same "name" as input field in form
                     try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
@@ -335,7 +335,6 @@ private void update() {
         });
         post("/tldrfile_backup", (request, response) -> {
             File f = new File(archiveFolder.toPath() + "/quickpose"+LocalDateTime.now().toString().replace(':', '-') +".tldr");
-            tldrLock.lock();
             try {
                 String proj = request.queryParams("ProjectName"); //request.attribute("ProjectName");
                 if(proj.contentEquals(sketchFolder.getName())){
@@ -344,15 +343,11 @@ private void update() {
                     try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
                         Files.copy(input, f.toPath(), StandardCopyOption.REPLACE_EXISTING);    
                         // Copy a file into the zip file
-                        ZipParameters zipParameters = new ZipParameters();
-                        zipParameters.setCompressionLevel(CompressionLevel.ULTRA);
-                        List<File> fileList = new ArrayList<File>();
-                        fileList.add(f);
-                        archiveZip.createSplitZipFile(fileList, zipParameters, true, 300000000);
+                        archiveZip.addFile(f);
+                        
                     }
                 }
             } finally {
-                tldrLock.unlock();
             }
             return "Success";
         });
@@ -495,6 +490,19 @@ private void update() {
 
         archiveZip = new ZipFile(archiveFolder.getAbsolutePath()+"/archive.zip");
         archiveZip.setRunInThread(true);
+        ZipParameters zipParameters = new ZipParameters();
+        zipParameters.setCompressionLevel(CompressionLevel.ULTRA);
+        List<File> fileList = new ArrayList<File>();
+        try {
+            if(!archiveZip.isSplitArchive()){
+                archiveZip.createSplitZipFile(fileList, zipParameters, true, 300000000);
+            }
+        } catch (ZipException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+            logger.error(e1.getMessage());
+        }
+        
         try {  
 
             // This block configure the logger with handler and formatter  

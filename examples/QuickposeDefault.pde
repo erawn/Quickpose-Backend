@@ -13,7 +13,7 @@ void draw(){
   arc(height/2, width/2,height,width, t, t+PI,CHORD);
   
   
-  if(frameCount % 60 == 0){
+  if(frameCount % 20 == 0){
     save("render.png");
   }
 }
