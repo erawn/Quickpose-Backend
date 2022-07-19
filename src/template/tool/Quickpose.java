@@ -33,22 +33,34 @@ import static spark.Spark.*;
 import com.fasterxml.jackson.jr.ob.JSON;
 
 import java.awt.Color;
-import java.io.*;
 import java.io.File;
 import java.io.OutputStream;
+import java.net.URI;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.logging.FileHandler;
 import java.util.logging.SimpleFormatter;
+import java.nio.ByteBuffer;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import net.lingala.zip4j.model.ZipParameters;
+import net.lingala.zip4j.model.enums.CompressionLevel;
+import net.lingala.zip4j.ZipFile;
+
 
 
 import javax.servlet.*;
@@ -60,6 +72,10 @@ import ch.qos.logback.classic.Logger;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.bson.BSON;
+import org.bson.BSONObject;
+import org.bson.BasicBSONObject;
+import org.bson.types.Binary;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -73,6 +89,7 @@ import processing.app.Sketch;
 import processing.app.SketchCode;
 import processing.app.tools.Tool;
 import processing.app.ui.Editor;
+import processing.app.ui.EditorStatus;
 
 import java.time.LocalDateTime;  
 
@@ -102,13 +119,14 @@ public class Quickpose implements Tool {
     private Lock renderLock = new ReentrantLock();
     private Lock tldrLock = new ReentrantLock();
 
+    private ZipFile archiveZip;
     private org.slf4j.Logger logger = LoggerFactory.getLogger(Quickpose.class);
     
 
     private java.util.logging.Logger archiver = java.util.logging.Logger.getLogger("ArchiveLog");  
 
     FileHandler logFileHandler; 
-    
+    ThumbnailWebSocket handler = new ThumbnailWebSocket();
 
 
     Runnable updateLoop = new Runnable() {
@@ -128,18 +146,15 @@ public class Quickpose implements Tool {
     }
 
     public void run() {
-       
-        Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        root.setLevel(Level.ERROR);
 
-        Logger hotswap = (Logger)LoggerFactory.getLogger("org.hotswap.agent.HotswapAgent");
-        hotswap.setLevel(Level.ERROR);
-        Logger hotswap2 = (Logger)LoggerFactory.getLogger("org.hotswap.agent.config.PluginRegistry");
-        hotswap2.setLevel(Level.ERROR);
+        
+        Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        root.setLevel(Level.INFO);
+
+        archiver.setUseParentHandlers(false);
 
         if (base.getActiveEditor().getSketch().isUntitled()) {
-            Messages.showMessage("Quickpose: Unsaved Sketch",
-                    "Quickpose Can't Run on an Unsaved Sketch, Please Save Sketch and Run Again");
+            editor.statusMessage("Quickpose: Unsaved Sketch. Please Save Sketch and Run Again",EditorStatus.ERROR);
             base.getActiveEditor().handleSave(false);
 
         } else {
@@ -156,11 +171,17 @@ public class Quickpose implements Tool {
             setup = true;
         }
     }
-
-    private void update() {
-        File render = new File(sketchFolder.toPath() + "/render.png");
+private void update() {
+        //System.out.println("update");
+        File render = new File(sketchFolder.getAbsolutePath() + "/render.png");
         File storedRender = new File(versionsCode.getAbsolutePath() + "/_" + currentVersion + "/render.png");
         boolean fileModified = base.getActiveEditor().getSketch().isModified();
+        // System.out.println(render.getAbsolutePath());
+        // System.out.println(render.exists());
+        // System.out.println(!storedRender.exists());
+        // System.out.println();
+        // System.out.println(storedRender.lastModified());
+        // System.out.println(render.lastModified() != storedRender.lastModified());
         boolean renderModified = render.exists() && (!storedRender.exists() || render.lastModified() != storedRender.lastModified());
 
         codeTree.getNode(currentVersion).data.setCaretPosition(editor.getTextArea().getCaretPosition());
@@ -168,18 +189,42 @@ public class Quickpose implements Tool {
         if (fileModified) {
             makeVersion(currentVersion);
             lastModified = render.lastModified();
-        } else if (renderModified) {
-            File tempRender = new File(versionsCode.getAbsolutePath() + "/_" + currentVersion + "/renderTemp.png");
-            copyFile(render, tempRender);
+            System.out.println("filemod");
 
-            renderLock.lock();
-            try {
-                storedRender.delete();
-                tempRender.renameTo(storedRender);
-            } finally {
-                renderLock.unlock();
+        } else if (renderModified) {
+            //System.out.println("renderMod");
+            File tempRender = new File(versionsCode.getAbsolutePath() + "/_" + currentVersion + "/renderTemp.png");
+            if(renderLock.tryLock()){
+                try {
+                   // System.out.println("1");
+                    copyFile(render, tempRender);
+                    //System.out.println("2");
+                    //Document doc = new Document();
+
+                    BSONObject obj = new BasicBSONObject();
+                    byte[] bytes = FileUtils.readFileToByteArray(tempRender);
+                    //System.out.println("3");
+                    obj.put("image_size", bytes.length);
+                    obj.put("image", bytes);
+                    //System.out.println(obj.toString());
+                    //System.out.println("4");
+                    handler.broadcastData(ByteBuffer.wrap(BSON.encode(obj)));
+                    
+                    storedRender.delete();
+                    tempRender.renameTo(storedRender);
+                    //System.out.println("5");
+                }catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    logger.error(e.getMessage());
+                } finally {
+                    renderLock.unlock();
+                }
+                
+                lastModified = render.lastModified();
+            }else{
+                System.out.println("couldn't acquire lock");
             }
-            lastModified = render.lastModified();
+            
         }
 
         if (codeTree.getNode(currentVersion).children.size() != 0){
@@ -188,9 +233,8 @@ public class Quickpose implements Tool {
     }
 
     private void networkSetup() {
+        webSocket("/thumbnail", handler);
         port(serverPort);
-        int maxThreads = 8;
-        threadPool(maxThreads);
         System.out.println("Quickpose: Starting server on port:" + serverPort);
         System.out.println("Open ##tool.url## in a Browser to Start");
         options("/*",
@@ -215,7 +259,7 @@ public class Quickpose implements Tool {
 
         before((request, response) -> response.header("Access-Control-Allow-Origin", "*"));
 
-        webSocket("/thumbnail", ThumbnailWebSocket.class);
+        
         // https://stackoverflow.com/questions/47328754/with-java-spark-how-do-i-send-a-html-file-as-a-repsonse
         get("/", (request, response) -> {
             response.redirect("https://quickpose.vercel.app/");
@@ -272,7 +316,7 @@ public class Quickpose implements Tool {
                         Files.copy(input, dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
                     }
                 }else{
-                    System.out.println("Quickpose: Please reload browser window : .tldr document name doesn't match project, copying to quickposeTemp.tldr instead");
+                    editor.statusMessage("Quickpose: old tldr file in browser, please reload browser window",EditorStatus.WARNING);
                     request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
                     // getPart needs to use same "name" as input field in form
                     try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
@@ -298,7 +342,13 @@ public class Quickpose implements Tool {
                 request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
                 // getPart needs to use same "name" as input field in form
                     try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
-                        Files.copy(input, f.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        Files.copy(input, f.toPath(), StandardCopyOption.REPLACE_EXISTING);    
+                        // Copy a file into the zip file
+                        ZipParameters zipParameters = new ZipParameters();
+                        zipParameters.setCompressionLevel(CompressionLevel.ULTRA);
+                        List<File> fileList = new ArrayList<File>();
+                        fileList.add(f);
+                        archiveZip.createSplitZipFile(fileList, zipParameters, true, 300000000);
                     }
                 }
             } finally {
@@ -373,14 +423,14 @@ public class Quickpose implements Tool {
                 f = new File(sketchFolder.getParentFile().getAbsolutePath() + "/tools/Quickpose/examples/noicon.png");
             }
             if (request.params(":id") == String.valueOf(currentVersion)) {
-                renderLock.lock();
-                try (OutputStream out = response.raw().getOutputStream()) {
-                    response.header("Content-Disposition", "inline; filename=render.png");
-                    Files.copy(f.toPath(), out);
-                    out.flush();
-                } finally {
-                    renderLock.unlock();
-                }
+                // renderLock.lock();
+                // try (OutputStream out = response.raw().getOutputStream()) {
+                //     response.header("Content-Disposition", "inline; filename=render.png");
+                //     Files.copy(f.toPath(), out);
+                //     out.flush();
+                // } finally {
+                //     renderLock.unlock();
+                // }
             } else {
                 try (OutputStream out = response.raw().getOutputStream()) {
                     response.header("Content-Disposition", "inline; filename=render.png");
@@ -443,6 +493,8 @@ public class Quickpose implements Tool {
         File starterCatFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/cat.png");
         File startertldr = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/quickpose.tldr");
 
+        archiveZip = new ZipFile(archiveFolder.getAbsolutePath()+"/archive.zip");
+        archiveZip.setRunInThread(true);
         try {  
 
             // This block configure the logger with handler and formatter  
