@@ -123,13 +123,10 @@ public class Quickpose implements Tool {
     private long lastModified = 0;
     private Lock renderLock = new ReentrantLock();
     private Lock tldrLock = new ReentrantLock();
-
+   
     private ZipFile archiveZip;
     private org.slf4j.Logger logger = LoggerFactory.getLogger(Quickpose.class);
     
-    
-
-
     private java.util.logging.Logger archiver = java.util.logging.Logger.getLogger("ArchiveLog");  
 
     FileHandler logFileHandler; 
@@ -152,14 +149,15 @@ public class Quickpose implements Tool {
     public void init(Base base) {
         // Store a reference to the Processing application itself
         this.base = base;
-
-    }
-
-    public void run() {
-
+        
         Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         root.setLevel(Level.ERROR);
         archiver.setUseParentHandlers(false);
+    }
+
+    public void run() {
+        
+        
 
         if (base.getActiveEditor().getSketch().isUntitled()) {
             Messages.showMessage("Quickpose: Unsaved Sketch","Quickpose: Unsaved Sketch -- Please Save Sketch and Run Again");
@@ -174,82 +172,79 @@ public class Quickpose implements Tool {
             if (executor != null) {
                 executor.shutdownNow();
             }
-            executor = Executors.newScheduledThreadPool(1);
+            executor = Executors.newScheduledThreadPool(2);
             executor.scheduleAtFixedRate(updateLoop, 0, 100, TimeUnit.MILLISECONDS);
             setup = true;
         }
     }
 private void update() {
-        //System.out.println("update");
-        File render = new File(sketchFolder.getAbsolutePath() + "/render.png");
-        File storedRender = new File(versionsCode.getAbsolutePath() + "/_" + currentVersion + "/render.png");
-        boolean fileModified = base.getActiveEditor().getSketch().isModified();
-        // System.out.println(render.getAbsolutePath());
-        // System.out.println(render.exists());
-        // System.out.println(!storedRender.exists());
-        // System.out.println();
-        // System.out.println(storedRender.lastModified());
-        // System.out.println(render.lastModified() != storedRender.lastModified());
-        boolean renderModified = render.exists() && (!storedRender.exists() || render.lastModified() != storedRender.lastModified());
-
-        codeTree.getNode(currentVersion).data.setCaretPosition(editor.getTextArea().getCaretPosition());
-
-        if (fileModified) {
-            makeVersion(currentVersion);
-            lastModified = render.lastModified();
-
-        } else if (renderModified) {
-            //System.out.println("renderMod");
+    try {
+        if(renderLock.tryLock(90, TimeUnit.MILLISECONDS)){
+            //System.out.println("update");
+            File render = new File(sketchFolder.getAbsolutePath() + "/render.png");
             File tempRender = new File(versionsCode.getAbsolutePath() + "/_" + currentVersion + "/renderTemp.png");
-            if(renderLock.tryLock()){
-                try {
-                   // System.out.println("1");
-                    copyFile(render, tempRender);
-                    //System.out.println("2");
-                    //Document doc = new Document();
+            File storedRender = new File(versionsCode.getAbsolutePath() + "/_" + currentVersion + "/render.png");
+            boolean fileModified = base.getActiveEditor().getSketch().isModified();
+            // System.out.println(render.getAbsolutePath());
+            // System.out.println(render.exists());
+            // System.out.println(!storedRender.exists());
+            // System.out.println();
+            // System.out.println(storedRender.lastModified());
+            // System.out.println(render.lastModified() != storedRender.lastModified());
+            boolean renderModified = render.exists() && (!storedRender.exists() || render.lastModified() != storedRender.lastModified());
 
-                    BSONObject obj = new BasicBSONObject();
-                    byte[] bytes = FileUtils.readFileToByteArray(tempRender);
-                    //System.out.println("3");
-                    obj.put("image_size", bytes.length);
-                    obj.put("image", bytes);
-                    //System.out.println(obj.toString());
-                    //System.out.println("4");
-                    handler.broadcastData(ByteBuffer.wrap(BSON.encode(obj)));
-                    
-                    storedRender.delete();
-                    tempRender.renameTo(storedRender);
-                    //System.out.println("5");
-                }catch (IOException e) {
-                    // TODO Auto-generated catch block
-                    logger.error(e.getMessage());
-                } finally {
-                    renderLock.unlock();
-                }
-                
+            codeTree.getNode(currentVersion).data.setCaretPosition(editor.getTextArea().getCaretPosition());
+
+            if (fileModified) {
+                makeVersion(currentVersion);
                 lastModified = render.lastModified();
-            }else{
-                logger.error("couldn't acquire lock");
-            }
+
+            } else if (renderModified) {
+            //System.out.println("renderMod");
+
+
+                copyFile(render, tempRender);
+                BSONObject obj = new BasicBSONObject();
+                byte[] bytes = FileUtils.readFileToByteArray(tempRender);
+                obj.put("version_id", currentVersion);
+                obj.put("image", bytes);
+                handler.broadcastData(ByteBuffer.wrap(BSON.encode(obj)));
+                
+                storedRender.delete();
+                tempRender.renameTo(storedRender);
+                //System.out.println("5");
             
+            
+                lastModified = render.lastModified();
+            }
+        }
+        
+            
+        }catch (Exception e) {
+            // TODO Auto-generated catch block
+            logger.error(e.getMessage());
+        } finally {
+            renderLock.unlock();
         }
 
-        if (codeTree.getNode(currentVersion).children.size() != 0){
-            //editor.statusNotice("Sketch is Read Only Because It Has Child Nodes");
-            //editor.statusMessage("Sketch is Read Only Because It Has Child Nodes",EditorStatus.NOTICE);
-        }else if (editor.getStatusMessage()=="Sketch is Read Only Because It Has Child Nodes"){
-            editor.statusEmpty();
-        }
-
-        if(sessions.isEmpty()){
-
-        }else{
-        }
+    if (codeTree.getNode(currentVersion).children.size() != 0){
+        //editor.statusNotice("Sketch is Read Only Because It Has Child Nodes");
+        //editor.statusMessage("Sketch is Read Only Because It Has Child Nodes",EditorStatus.NOTICE);
+    }else if (editor.getStatusMessage()=="Sketch is Read Only Because It Has Child Nodes"){
+        editor.statusEmpty();
     }
+
+    if(sessions.isEmpty()){
+
+    }else{
+    }
+}
 
     private void networkSetup() {
         webSocket("/thumbnail", handler);
         port(serverPort);
+        int maxThreads = 8;
+        threadPool(maxThreads);
         System.out.println("Quickpose: Starting server on port:" + serverPort);
         System.out.println("Open ##tool.url## in a Browser to Start");
         options("/*",
@@ -294,9 +289,11 @@ private void update() {
             
         });
         get("/fork/:id", (request, response) -> {
+
             logger.info("Fork ID:" + Integer.parseInt(request.params(":id")));
-            if (fork(Integer.parseInt(request.params(":id"))) > 0) {
-                logger.warn("sent fork");
+            int childID = fork(Integer.parseInt(request.params(":id")));
+            if (childID > 0) {
+                currentVersion = childID;
                 return codeTree.getJSONSave(currentVersion, sketchFolder.getName());
             }
             response.status(500);
@@ -304,10 +301,11 @@ private void update() {
             return response;
         });
         get("/select/:id", (request, response) -> {
+            renderLock.lock();
             logger.info("Selected ID:"+Integer.parseInt(request.params(":id")));
-            currentVersion = Integer.parseInt(request.params(":id"));
-            changeActiveVersion(currentVersion);
+            currentVersion = changeActiveVersion(Integer.parseInt(request.params(":id")));
             archiver.info("Select"+Integer.parseInt(request.params(":id")));
+            renderLock.unlock();
             return currentVersion;
         });
         get("/currentVersion", (request, response) -> {
@@ -458,29 +456,20 @@ private void update() {
         });
 
         get("/image/:id", (request, response) -> {
-            // File f = new File(versionsCode.getAbsolutePath() + "/_" + request.params(":id") + "/render.png");
-            // if (f.exists()) {
-            //     response.status(200);
-            // } else {
-            //     response.status(201);
-            //     f = new File(sketchFolder.getParentFile().getAbsolutePath() + "/tools/Quickpose/examples/noicon.png");
-            // }
-            // if (request.params(":id") == String.valueOf(currentVersion)) {
-            //     // renderLock.lock();
-            //     // try (OutputStream out = response.raw().getOutputStream()) {
-            //     //     response.header("Content-Disposition", "inline; filename=render.png");
-            //     //     Files.copy(f.toPath(), out);
-            //     //     out.flush();
-            //     // } finally {
-            //     //     renderLock.unlock();
-            //     // }
-            // } else {
-            //     try (OutputStream out = response.raw().getOutputStream()) {
-            //         response.header("Content-Disposition", "inline; filename=render.png");
-            //         Files.copy(f.toPath(), out);
-            //         out.flush();
-            //     }
-            // }
+            File f = new File(versionsCode.getAbsolutePath() + "/_" + request.params(":id") + "/render.png");
+            if (f.exists()) {
+                response.status(200);
+            } else {
+                response.status(201);
+                f = new File(sketchFolder.getParentFile().getAbsolutePath() + "/tools/Quickpose/examples/noicon.png");
+            }
+            if (request.params(":id") != String.valueOf(currentVersion)) {
+                try (OutputStream out = response.raw().getOutputStream()) {
+                    response.header("Content-Disposition", "inline; filename=render.png");
+                    Files.copy(f.toPath(), out);
+                    out.flush();
+                }
+            }
             return response;
         });
         get("/assets/*", (request, response) -> {
@@ -600,7 +589,7 @@ private void update() {
                 archiver.info("Fork Version:"+id+"|To:"+child.id);
                 changeActiveVersion(child.id);
                 writeJSONFromRoot();
-                
+            
                 return child.id;
             }
         }
@@ -608,12 +597,12 @@ private void update() {
         return -1;
     }
 
-    private void changeActiveVersion(int id) {
+    private int changeActiveVersion(int id) {
 
         if (!codeTree.idExists(id)) {
             logger.error("Quickpose: Attempted to change active version to invalid Id"+id);
             archiver.info("Quickpose: Attempted to change active version to invalid Id"+id);
-            return;
+            return -1;
         }
         File[] sketchListing = sketchFolder.listFiles();
         if (sketchListing != null) {
@@ -623,6 +612,7 @@ private void update() {
                 }
             }
         }
+        
         File versionFolder = new File(versionsCode.getAbsolutePath() + "/_" + id);
         File[] versionListing = versionFolder.listFiles();
         if (versionListing != null) {
@@ -633,6 +623,9 @@ private void update() {
                 }
             }
         }
+        
+        editor.getSketch().reload();
+        editor.handleSave(true);
         // Something here breaks REPL mode
         if (codeTree.getNode(id).children.size() == 0){
             // editor.getSketch().getMainFile().setWritable(true);
@@ -651,18 +644,27 @@ private void update() {
             //editor.repaint();
         }
         // base.getActiveEditor().getSketch().updateSketchCodes();
-        editor.getSketch().reload();
-        editor.handleSave(true);
+        
         editor.getTextArea().setCaretPosition(codeTree.getNode(id).data.caretPosition);
         //System.out.println("setcaretto"+codeTree.getNode(id).data.caretPosition);
-        archiver.info("Change Version From:"+currentVersion+"|To:"+id);
-        currentVersion = id;
+    
+        editor.getSketch().reload();
+        sketchListing = sketchFolder.listFiles();
+        if (sketchListing != null) {
+            for (File f : sketchListing) {
+                if (FilenameUtils.equals(f.getName(), "render.png")) {
+                    f.delete();
+                }
+            }
+        }
+    
+        
+        return id;
         // System.out.println("Switched version to "+ id );
     }
 
     private String makeVersion(int id) {
         // base.getActiveEditor().getSketch().reload();
-
         editor.handleSave(true);
         File folder = new File(versionsCode.getAbsolutePath() + "/_" + id);
         folder.mkdir();
@@ -679,6 +681,7 @@ private void update() {
                 }
             }
         }
+    
         String relPath = sketchFolder.toPath().relativize(folder.toPath()).toString();
         return relPath;
     }
