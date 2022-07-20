@@ -158,7 +158,7 @@ public class Quickpose implements Tool {
     public void run() {
 
         Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        root.setLevel(Level.INFO);
+        root.setLevel(Level.ERROR);
         archiver.setUseParentHandlers(false);
 
         if (base.getActiveEditor().getSketch().isUntitled()) {
@@ -623,17 +623,15 @@ private void update() {
                 }
             }
         }
-        File versionFolder = new File(codeTree.getNode(id).data.path);
+        File versionFolder = new File(versionsCode.getAbsolutePath() + "/_" + id);
         File[] versionListing = versionFolder.listFiles();
         if (versionListing != null) {
-            renderLock.lock();
             for (File f : versionListing) {
                 if (FilenameUtils.isExtension(f.getName(), "pde") || f.getName() == "render.png") {
                     File newFile = new File(sketchFolder.getAbsolutePath() + "/" + f.getName());
                     copyFile(f, newFile);
                 }
             }
-            renderLock.unlock();
         }
         // Something here breaks REPL mode
         if (codeTree.getNode(id).children.size() == 0){
@@ -675,12 +673,10 @@ private void update() {
                     File newFile = new File(folder.getAbsolutePath() + "/" + f.getName());
                     copyFile(f, newFile);
                 }
-                renderLock.lock();
                 if (FilenameUtils.equals(f.getName(), "render.png")) {
                     File newFile = new File(folder.getAbsolutePath() + "/" + f.getName());
                     copyFile(f, newFile);
                 }
-                renderLock.unlock();
             }
         }
         String relPath = sketchFolder.toPath().relativize(folder.toPath()).toString();
