@@ -51,6 +51,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -67,6 +68,9 @@ import javax.servlet.*;
 import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+
+import org.eclipse.jetty.websocket.api.*;
+import org.eclipse.jetty.websocket.api.annotations.*;
 
 
 import org.apache.commons.io.FileUtils;
@@ -89,6 +93,8 @@ import processing.app.SketchCode;
 import processing.app.tools.Tool;
 import processing.app.ui.Editor;
 import processing.app.ui.EditorStatus;
+
+import java.util.concurrent.*;
 
 import java.time.LocalDateTime;  
 
@@ -121,11 +127,16 @@ public class Quickpose implements Tool {
     private ZipFile archiveZip;
     private org.slf4j.Logger logger = LoggerFactory.getLogger(Quickpose.class);
     
+    
+
 
     private java.util.logging.Logger archiver = java.util.logging.Logger.getLogger("ArchiveLog");  
 
     FileHandler logFileHandler; 
-    ThumbnailWebSocket handler = new ThumbnailWebSocket();
+    
+
+    Queue<Session> sessions = new ConcurrentLinkedQueue<>();
+    ThumbnailWebSocket handler = new ThumbnailWebSocket(sessions,logger,archiver);
 
 
     Runnable updateLoop = new Runnable() {
@@ -146,13 +157,11 @@ public class Quickpose implements Tool {
 
     public void run() {
 
-
         Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         root.setLevel(Level.INFO);
         archiver.setUseParentHandlers(false);
 
         if (base.getActiveEditor().getSketch().isUntitled()) {
-            System.out.println("2");
             Messages.showMessage("Quickpose: Unsaved Sketch","Quickpose: Unsaved Sketch -- Please Save Sketch and Run Again");
             base.getActiveEditor().handleSave(false);
 
@@ -188,7 +197,6 @@ private void update() {
         if (fileModified) {
             makeVersion(currentVersion);
             lastModified = render.lastModified();
-            System.out.println("filemod");
 
         } else if (renderModified) {
             //System.out.println("renderMod");
@@ -221,13 +229,21 @@ private void update() {
                 
                 lastModified = render.lastModified();
             }else{
-                System.out.println("couldn't acquire lock");
+                logger.error("couldn't acquire lock");
             }
             
         }
 
         if (codeTree.getNode(currentVersion).children.size() != 0){
-            editor.statusNotice("Sketch is Read Only Because It Has Child Nodes");
+            //editor.statusNotice("Sketch is Read Only Because It Has Child Nodes");
+            //editor.statusMessage("Sketch is Read Only Because It Has Child Nodes",EditorStatus.NOTICE);
+        }else if (editor.getStatusMessage()=="Sketch is Read Only Because It Has Child Nodes"){
+            editor.statusEmpty();
+        }
+
+        if(sessions.isEmpty()){
+
+        }else{
         }
     }
 
@@ -314,8 +330,12 @@ private void update() {
                     try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
                         Files.copy(input, dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
                     }
+                    if(editor.getStatusMessage().contentEquals("Quickpose: old tldr file in browser, please reload browser window")){
+                        editor.statusMessage("Quickpose: Browser Reloaded",EditorStatus.NOTICE);
+                    }
                 }else{
-                    editor.statusNotice("Quickpose: old tldr file in browser, please reload browser window");
+                    editor.statusMessage("Quickpose: old tldr file in browser, please reload browser window",EditorStatus.WARNING);
+                    //editor.statusMessage(message, type);
                     //editor.statusMessage("Quickpose: old tldr file in browser, please reload browser window",EditorStatus.WARNING);
                     request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
                     // getPart needs to use same "name" as input field in form
@@ -342,8 +362,35 @@ private void update() {
                 // getPart needs to use same "name" as input field in form
                     try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
                         Files.copy(input, f.toPath(), StandardCopyOption.REPLACE_EXISTING);    
+                        archiver.info("Backed Up File"+f.getName());
                         // Copy a file into the zip file
-                        archiveZip.addFile(f);
+                        List<File> backups = new ArrayList<File>();
+                        List<File> fileList = new ArrayList<File>();
+                            fileList.addAll(backups);
+                        for (File backup : archiveFolder.listFiles()){
+                            if(FilenameUtils.isExtension(backup.getName(), "tldr")){
+                                backups.add(backup);
+                                fileList.add(backup);
+                            }
+                        }
+                        if(backups.size() > 100){
+                            // archive.setRunInThread(true);
+                            // archiver.info("Compressed Backups:"+archive.getFile().getName());
+                            ZipParameters zipParameters = new ZipParameters();
+                            zipParameters.setCompressionLevel(CompressionLevel.ULTRA);
+                            System.out.println(backups.toString());
+                            ZipFile archiveZip = new ZipFile(archiveFolder.getAbsolutePath()+"/archive" + LocalDateTime.now().toString().replace(':', '-') + ".zip");
+                            archiveZip.setRunInThread(false);
+                            
+                            archiveZip.createSplitZipFile(fileList, zipParameters, true, 300000000);
+                            // archive.addFiles(backups,zipParameters);
+                            // archive.close();
+                            for (File backup : backups){
+                                backup.delete();
+                            }
+                        }
+                        
+
                         
                     }
                 }
@@ -367,7 +414,8 @@ private void update() {
                     }
                     return response;
                 }else{
-                    logger.warn("Quickpose: canvas file failed to save — if this happens often, your canvas might not be saved properly");
+                    editor.statusMessage("Quickpose: canvas file failed to save — if this happens often, your canvas might not be saved properly",EditorStatus.NOTICE);
+                    //logger.warn("Quickpose: canvas file failed to save — if this happens often, your canvas might not be saved properly");
                     response.status(400);
                     return response;
                 }
@@ -410,29 +458,29 @@ private void update() {
         });
 
         get("/image/:id", (request, response) -> {
-            File f = new File(versionsCode.getAbsolutePath() + "/_" + request.params(":id") + "/render.png");
-            if (f.exists()) {
-                response.status(200);
-            } else {
-                response.status(201);
-                f = new File(sketchFolder.getParentFile().getAbsolutePath() + "/tools/Quickpose/examples/noicon.png");
-            }
-            if (request.params(":id") == String.valueOf(currentVersion)) {
-                // renderLock.lock();
-                // try (OutputStream out = response.raw().getOutputStream()) {
-                //     response.header("Content-Disposition", "inline; filename=render.png");
-                //     Files.copy(f.toPath(), out);
-                //     out.flush();
-                // } finally {
-                //     renderLock.unlock();
-                // }
-            } else {
-                try (OutputStream out = response.raw().getOutputStream()) {
-                    response.header("Content-Disposition", "inline; filename=render.png");
-                    Files.copy(f.toPath(), out);
-                    out.flush();
-                }
-            }
+            // File f = new File(versionsCode.getAbsolutePath() + "/_" + request.params(":id") + "/render.png");
+            // if (f.exists()) {
+            //     response.status(200);
+            // } else {
+            //     response.status(201);
+            //     f = new File(sketchFolder.getParentFile().getAbsolutePath() + "/tools/Quickpose/examples/noicon.png");
+            // }
+            // if (request.params(":id") == String.valueOf(currentVersion)) {
+            //     // renderLock.lock();
+            //     // try (OutputStream out = response.raw().getOutputStream()) {
+            //     //     response.header("Content-Disposition", "inline; filename=render.png");
+            //     //     Files.copy(f.toPath(), out);
+            //     //     out.flush();
+            //     // } finally {
+            //     //     renderLock.unlock();
+            //     // }
+            // } else {
+            //     try (OutputStream out = response.raw().getOutputStream()) {
+            //         response.header("Content-Disposition", "inline; filename=render.png");
+            //         Files.copy(f.toPath(), out);
+            //         out.flush();
+            //     }
+            // }
             return response;
         });
         get("/assets/*", (request, response) -> {
@@ -488,20 +536,7 @@ private void update() {
         File starterCatFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/cat.png");
         File startertldr = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/quickpose.tldr");
 
-        archiveZip = new ZipFile(archiveFolder.getAbsolutePath()+"/archive.zip");
-        archiveZip.setRunInThread(true);
-        ZipParameters zipParameters = new ZipParameters();
-        zipParameters.setCompressionLevel(CompressionLevel.ULTRA);
-        List<File> fileList = new ArrayList<File>();
-        try {
-            if(!archiveZip.isSplitArchive()){
-                archiveZip.createSplitZipFile(fileList, zipParameters, true, 300000000);
-            }
-        } catch (ZipException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
-            logger.error(e1.getMessage());
-        }
+
         
         try {  
 
@@ -532,6 +567,10 @@ private void update() {
                 }
             }
         }
+        if (editor.getMode().getIdentifier() != "jm.mode.replmode.REPLMode") {
+            archiver.info("Wasn't Able To Start in REPL Mode");
+            editor.statusMessage("Quickpose: Wasn't Able To Start in REPL Mode", EditorStatus.WARNING);
+        }
 
         versionsTree = new File(versionsCode.getAbsolutePath() + "/tree.json");
         if (!versionsTree.exists()) {
@@ -558,8 +597,10 @@ private void update() {
             if (parent != null) {
                 Node child = parent.addChild(new Data(""));
                 child.data.path = makeVersion(child.id);
+                archiver.info("Fork Version:"+id+"|To:"+child.id);
                 changeActiveVersion(child.id);
                 writeJSONFromRoot();
+                
                 return child.id;
             }
         }
@@ -570,7 +611,8 @@ private void update() {
     private void changeActiveVersion(int id) {
 
         if (!codeTree.idExists(id)) {
-            logger.error("Quickpose: Attempted to change active version to invalid Id");
+            logger.error("Quickpose: Attempted to change active version to invalid Id"+id);
+            archiver.info("Quickpose: Attempted to change active version to invalid Id"+id);
             return;
         }
         File[] sketchListing = sketchFolder.listFiles();
@@ -605,7 +647,8 @@ private void update() {
             // editor.getSketch().getMainFile().setWritable(false);
             // editor.getSketch().getMainFile().setReadOnly();
             editor.getTextArea().setEditable(false);
-            editor.statusNotice("Sketch is Read Only Because It Has Child Nodes");
+            editor.statusMessage("Sketch is Read Only Because It Has Child Nodes",EditorStatus.NOTICE);
+            //editor.statusNotice("Sketch is Read Only Because It Has Child Nodes");
             editor.getTextArea().getPainter().setBackground(Color.LIGHT_GRAY);
             //editor.repaint();
         }
@@ -614,6 +657,7 @@ private void update() {
         editor.handleSave(true);
         editor.getTextArea().setCaretPosition(codeTree.getNode(id).data.caretPosition);
         //System.out.println("setcaretto"+codeTree.getNode(id).data.caretPosition);
+        archiver.info("Change Version From:"+currentVersion+"|To:"+id);
         currentVersion = id;
         // System.out.println("Switched version to "+ id );
     }

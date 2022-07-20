@@ -10,13 +10,20 @@ import java.util.concurrent.*;
 public class ThumbnailWebSocket {
 
     // Store sessions if you want to, for example, broadcast a message to all users
-    private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
+    private static Queue<Session> sessions;
+    private static org.slf4j.Logger logger;
+    private static java.util.logging.Logger archiver;
 
+    public ThumbnailWebSocket(Queue<Session> sessionQueue, org.slf4j.Logger log,java.util.logging.Logger archive){
+        sessions = sessionQueue;
+        logger = log;
+        archiver = archive; 
+    }
     @OnWebSocketConnect
     public void connected(Session session) {
         if(!sessions.contains(session)){
             sessions.add(session);
-            System.out.println("added session"+session.toString());
+            archiver.info("added session"+session.toString());
         }
         
     }
@@ -24,7 +31,7 @@ public class ThumbnailWebSocket {
     @OnWebSocketClose
     public void closed(Session session, int statusCode, String reason) {
         sessions.remove(session);
-        System.out.println("removed session"+session.toString());
+        archiver.info("removed session"+session.toString());
     }
 
     @OnWebSocketMessage
