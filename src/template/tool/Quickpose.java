@@ -194,20 +194,13 @@ private void update() {
             try{
                 //System.out.println("update");
                 File render = new File(sketchFolder.getAbsolutePath() + "/render.png");
-                
                 File storedRender = new File(versionsCode.getAbsolutePath() + "/_" + currentVersion + "/render.png");
                 boolean fileModified = base.getActiveEditor().getSketch().isModified();
-                // System.out.println(render.getAbsolutePath());
-                // System.out.println(render.exists());
-                // System.out.println(!storedRender.exists());
-                // System.out.println();
-                // System.out.println(storedRender.lastModified());
-                // System.out.println(render.lastModified() != storedRender.lastModified());
                 boolean renderModified = render.exists() && (!storedRender.exists() || render.lastModified() != storedRender.lastModified());
                 codeTree.getNode(currentVersion).data.setCaretPosition(editor.getTextArea().getCaretPosition());
                 if (fileModified) {
                     makeVersion(currentVersion);
-                } else if (renderModified) {
+                } else if (renderModified && FileUtils.sizeOf(render) > FileUtils.ONE_KB) {
                     Utils.copyFile(render, storedRender);
                     byte[] bytes = FileUtils.readFileToByteArray(storedRender);
                     obj.put("image", bytes);
@@ -643,7 +636,7 @@ private void update() {
                     File newFile = new File(sketchFolder.getAbsolutePath() + "/" + f.getName());
                     copyFile(f, newFile);
                 }
-                if (f.getName() == "render.png") {
+                if (f.getName() == "render.png"&& FileUtils.sizeOf(f) > FileUtils.ONE_KB) {
                     renderLock.lock();
                     try{
                         File newFile = new File(sketchFolder.getAbsolutePath() + "/" + f.getName());
@@ -680,19 +673,19 @@ private void update() {
         //System.out.println("setcaretto"+codeTree.getNode(id).data.caretPosition);
     
         editor.getSketch().reload();
-        sketchListing = sketchFolder.listFiles();
-        if (sketchListing != null) {
-            for (File f : sketchListing) {
-                if (FilenameUtils.equals(f.getName(), "render.png")) {
-                    renderLock.lock();
-                    try{
-                        f.delete();
-                    }finally{
-                        renderLock.unlock();
-                    }
-                }
-            }
-        }
+        // sketchListing = sketchFolder.listFiles();
+        // if (sketchListing != null) {
+        //     for (File f : sketchListing) {
+        //         if (FilenameUtils.equals(f.getName(), "render.png")) {
+        //             renderLock.lock();
+        //             try{
+        //                 f.delete();
+        //             }finally{
+        //                 renderLock.unlock();
+        //             }
+        //         }
+        //     }
+        // }
     
         
         return id;
@@ -711,7 +704,7 @@ private void update() {
                     File newFile = new File(folder.getAbsolutePath() + "/" + f.getName());
                     copyFile(f, newFile);
                 }
-                if (FilenameUtils.equals(f.getName(), "render.png")) {
+                if (FilenameUtils.equals(f.getName(), "render.png") && FileUtils.sizeOf(f) > FileUtils.ONE_KB) {
                     renderLock.lock();
                     try{
                         File newFile = new File(folder.getAbsolutePath() + "/" + f.getName());
