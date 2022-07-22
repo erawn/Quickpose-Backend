@@ -592,6 +592,7 @@ private void update() {
         if (codeTree.idExists(id)) {
             Node parent = codeTree.getNode(id);
             if (parent != null) {
+                changeActiveVersion(id);
                 Node child = parent.addChild(new Data(""));
                 child.data.path = makeVersion(child.id);
                 archiver.info("Fork Version:"+id+"|To:"+child.id);
