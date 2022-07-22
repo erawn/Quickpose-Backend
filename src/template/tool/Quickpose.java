@@ -208,7 +208,7 @@ private void update() {
                 if (fileModified) {
                     makeVersion(currentVersion);
                 } else if (renderModified) {
-                    copyFile(render, storedRender);
+                    Utils.copyFile(render, storedRender);
                     byte[] bytes = FileUtils.readFileToByteArray(storedRender);
                     obj.put("image", bytes);
                 }
