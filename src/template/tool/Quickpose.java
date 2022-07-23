@@ -573,7 +573,7 @@ private void update() {
         if (!versionsTree.exists()) {
             logger.warn("Quickpose: No Existing Quickpose Session Detected - creating a new verison history");
             if (starterCodeFile.exists() && editor.getText().length() < 10) { //This is a hack
-                    copyFile(starterCodeFile, editor.getSketch().getMainFile());
+                    copyFile(starterCodeFile, new File(editor.getSketch().getMainPath()));
                     copyFile(starterCatFile, new File(assetsFolder.toPath()+"/cat.png"));
                     copyFile(startertldr, new File(versionsCode.toPath()+"/quickpose.tldr"));
                     editor.getSketch().reload();

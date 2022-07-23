@@ -139,7 +139,12 @@ ${line}
 	
 	<target name="compile">
 		<antcall target="parse.file"><param name="file" value="${project.tmp}/${project.name}/src/template/tool/Quickpose.java"/></antcall>
-		<javac srcdir="${project.tmp}/${project.name}/src" destdir="${project.bin}" source="8" target="8" includeantruntime="false">
+		<javac 
+			srcdir="${project.tmp}/${project.name}/src" 
+			destdir="${project.bin}" 
+			source="11" 
+			target="11" 
+			includeantruntime="false">
 			<classpath>
 				<path refid="classpath"/>
 			</classpath>
