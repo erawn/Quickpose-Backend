@@ -1593,10 +1593,12 @@
       }
     }
   },
-  "assets": {
+  "graphData": {
     "simData": "{\"nodes\":[{\"path\":\"/Quickpose/_0\",\"caretPosition\":145,\"id\":\"0\",\"label\":\"Node0\",\"index\":0,\"x\":81.4,\"y\":62,\"vy\":0,\"vx\":0,\"r\":6,\"fx\":81.4,\"fy\":62}],\"links\":[]}",
     "alpha": "1.998980656141413e-108",
-    "centerPoint": "[377,280]",
+    "centerPoint": "[377,280]"
+  },
+  "assets":{
     "c97b8e1e-2a63-4461-129a-63fc50f0adc7": {
       "id": "c97b8e1e-2a63-4461-129a-63fc50f0adc7",
       "type": "image",

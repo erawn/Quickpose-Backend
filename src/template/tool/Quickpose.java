@@ -312,7 +312,7 @@ private void update() {
             tldrLock.lock();
             try {
                 String proj = request.queryParams("ProjectName");
-                if(proj.contentEquals(sketchFolder.getName()) || proj.contentEquals("null")){
+                if(proj.contentEquals(sketchFolder.getName()) || proj.contentEquals("null")|| proj.contentEquals("")){
                     request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
                     // getPart needs to use same "name" as input field in form
                     try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
