@@ -33,7 +33,9 @@ import static spark.Spark.*;
 import com.fasterxml.jackson.jr.ob.JSON;
 
 import java.awt.Color;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.OutputStream;
 import java.net.URI;
 import java.io.IOException;
@@ -63,6 +65,8 @@ import net.lingala.zip4j.model.enums.CompressionLevel;
 import net.lingala.zip4j.ZipFile;
 
 import javax.servlet.*;
+import javax.swing.JTextArea;
+import javax.swing.text.BadLocationException;
 
 import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.Level;
@@ -86,9 +90,13 @@ import processing.app.Messages;
 import processing.app.Mode;
 import processing.app.Sketch;
 import processing.app.SketchCode;
+import processing.app.syntax.JEditTextArea;
+import processing.app.syntax.SyntaxDocument;
 import processing.app.tools.Tool;
 import processing.app.ui.Editor;
 import processing.app.ui.EditorStatus;
+import processing.core.*;
+import processing.app.syntax.*;
 import spark.Spark;
 
 import java.util.concurrent.*;
@@ -148,9 +156,7 @@ public class Quickpose implements Tool {
     }
 
     public void run() {
-        
-        
-
+        //make new if on existing file 
         if (base.getActiveEditor().getSketch().isUntitled()) {
             Messages.showMessage("Quickpose: Unsaved Sketch","Quickpose: Unsaved Sketch -- Please Save Sketch and Run Again");
             base.getActiveEditor().handleSave(false);
@@ -174,10 +180,8 @@ public class Quickpose implements Tool {
                   stop();
                   executor.shutdown();
                   if (executor.awaitTermination(100, TimeUnit.MILLISECONDS)) {
-                    System.out.println("Still waiting 100ms...");
                     executor.shutdownNow();
                   }
-                  System.out.println("System exited gracefully");
                 } catch (InterruptedException e) {
                   executor.shutdownNow();
                 }
@@ -220,7 +224,7 @@ private void update() {
 
     if (codeTree.getNode(currentVersion).children.size() != 0){
         //editor.statusNotice("Sketch is Read Only Because It Has Child Nodes");
-        //editor.statusMessage("Sketch is Read Only Because It Has Child Nodes",EditorStatus.NOTICE);
+        editor.statusMessage("Sketch is Read Only Because It Has Child Nodes",EditorStatus.NOTICE);
     }else if (editor.getStatusMessage()=="Sketch is Read Only Because It Has Child Nodes"){
         editor.statusEmpty();
     }
@@ -241,28 +245,18 @@ private void update() {
         System.out.println("Open ##tool.url## in a Browser to Start");
         options("/*",
                 (request, response) -> {
-
-                    String accessControlRequestHeaders = request
-                            .headers("Access-Control-Request-Headers");
+                    String accessControlRequestHeaders = request.headers("Access-Control-Request-Headers");
                     if (accessControlRequestHeaders != null) {
-                        response.header("Access-Control-Allow-Headers",
-                                accessControlRequestHeaders);
+                        response.header("Access-Control-Allow-Headers",accessControlRequestHeaders);
                     }
-
-                    String accessControlRequestMethod = request
-                            .headers("Access-Control-Request-Method");
+                    String accessControlRequestMethod = request.headers("Access-Control-Request-Method");
                     if (accessControlRequestMethod != null) {
-                        response.header("Access-Control-Allow-Methods",
-                                accessControlRequestMethod);
+                        response.header("Access-Control-Allow-Methods",accessControlRequestMethod);
                     }
-
                     return "OK";
                 });
-
         before((request, response) -> response.header("Access-Control-Allow-Origin", "*"));
 
-        
-        // https://stackoverflow.com/questions/47328754/with-java-spark-how-do-i-send-a-html-file-as-a-repsonse
         get("/", (request, response) -> {
             response.redirect("https://quickpose.vercel.app/");
             return response;
@@ -298,14 +292,14 @@ private void update() {
             currentVersion = changeActiveVersion(Integer.parseInt(request.params(":id")));
             return currentVersion;
         });
-        get("/currentVersion", (request, response) -> {
-            // System.out.println("Current ID Request :" + currentVersion);
-            return currentVersion;
-        });
-        get("/projectName", (request, response) -> {
-            // System.out.println("Current ID Request :" + currentVersion);
-            return sketchFolder.getName();
-        });
+        // get("/currentVersion", (request, response) -> {
+        //     // System.out.println("Current ID Request :" + currentVersion);
+        //     return currentVersion;
+        // });
+        // get("/projectName", (request, response) -> {
+        //     // System.out.println("Current ID Request :" + currentVersion);
+        //     return sketchFolder.getName();
+        // });
         post("/tldrfile", (request, response) -> {
             File dest = new File(versionsCode.toPath() + "/quickpose.tldr");
             File f = new File(versionsCode.toPath() + "/quickposeTemp.tldr");
@@ -323,8 +317,6 @@ private void update() {
                     }
                 }else{
                     editor.statusMessage("Quickpose: old tldr file in browser, please reload browser window",EditorStatus.WARNING);
-                    //editor.statusMessage(message, type);
-                    //editor.statusMessage("Quickpose: old tldr file in browser, please reload browser window",EditorStatus.WARNING);
                     request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
                     // getPart needs to use same "name" as input field in form
                     try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
@@ -368,8 +360,6 @@ private void update() {
                             }
                         }
                         if(backups.size() > 100){
-                            // archive.setRunInThread(true);
-                            // archiver.info("Compressed Backups:"+archive.getFile().getName());
                             ZipParameters zipParameters = new ZipParameters();
                             zipParameters.setCompressionLevel(CompressionLevel.ULTRA);
                             System.out.println(backups.toString());
@@ -380,9 +370,6 @@ private void update() {
                                     backup.delete();
                                 }
                             }
-                            // archive.addFiles(backups,zipParameters);
-                            // archive.close();
-                            
                         }
                         
 
@@ -437,7 +424,7 @@ private void update() {
                                 renderLock.lock();
                                 try{
                                     File newFile = new File(export + "/" + "render"+i+".png");
-                                    copyFile(f, newFile);
+                                    Utils.copyFile(f, newFile);
                                 } finally {
                                     renderLock.unlock();
                                 }
@@ -517,76 +504,7 @@ private void update() {
         });
     }
 
-    private void dataSetup() {
-        editor = base.getActiveEditor();
-        sketchFolder = editor.getSketch().getFolder();
-        String sketchPath = sketchFolder.getAbsolutePath();
-        versionsCode = new File(sketchPath + "/" + "Quickpose");
-        versionsCode.mkdir();
-        assetsFolder = new File(versionsCode.toPath() + "/" + "assets");
-        assetsFolder.mkdir();
-        archiveFolder = new File(versionsCode.toPath() + "/" + "archive");
-        archiveFolder.mkdir();
-        exportFolder = new File(versionsCode.toPath() + "/" + "exports");
-        exportFolder.mkdir();
-        File starterCodeFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/QuickposeDefault.pde");
-        File starterCatFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/cat.png");
-        File startertldr = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/quickpose.tldr");
 
-
-        
-        try {  
-
-            // This block configure the logger with handler and formatter  
-            logFileHandler = new FileHandler(archiveFolder.getPath()+"/quickpose.log",true);  
-            archiver.addHandler(logFileHandler);
-            SimpleFormatter formatter = new SimpleFormatter();  
-            logFileHandler.setFormatter(formatter);  
-            archiver.setUseParentHandlers(false);
-    
-        } catch (SecurityException e) {  
-            e.printStackTrace();  
-        } catch (IOException e) {  
-            e.printStackTrace();  
-        }  
-
-
-        if (editor.getMode().getIdentifier() == "jm.mode.replmode.REPLMode") {
-            logger.info("Quickpose: Running in REPL Mode");
-            archiver.info("Start Session in REPL Mode");
-        } else {
-            logger.warn("Quickpose: Please Run in REPL Mode!");
-            System.out.println(base.getModeList());
-            for (Mode m : base.getModeList()) {
-                if (m.getIdentifier() == "jm.mode.replmode.REPLMode") {
-                    base.changeMode(m);
-                    System.out.println("Quickpose: Switched to REPL mode");
-                }
-            }
-        }
-        if (editor.getMode().getIdentifier() != "jm.mode.replmode.REPLMode") {
-            archiver.info("Wasn't Able To Start in REPL Mode");
-            editor.statusMessage("Quickpose: Wasn't Able To Start in REPL Mode", EditorStatus.WARNING);
-        }
-
-        versionsTree = new File(versionsCode.getAbsolutePath() + "/tree.json");
-        if (!versionsTree.exists()) {
-            logger.warn("Quickpose: No Existing Quickpose Session Detected - creating a new verison history");
-            if (starterCodeFile.exists() && editor.getText().length() < 10) { //This is a hack
-                    copyFile(starterCodeFile, new File(editor.getSketch().getMainPath()));
-                    copyFile(starterCatFile, new File(assetsFolder.toPath()+"/cat.png"));
-                    copyFile(startertldr, new File(versionsCode.toPath()+"/quickpose.tldr"));
-                    editor.getSketch().reload();
-                    editor.handleSave(false);
-            }
-            codeTree = new Tree(new Data(makeVersion(0)));
-            changeActiveVersion(0);
-            writeJSONFromRoot();
-        } else {
-            logger.info("Quickpose: Existing Quickpose Session Found! Loading...");
-            readJSONToRoot();
-        }
-    }
 
     private int fork(int id) {
         if (codeTree.idExists(id)) {
@@ -607,7 +525,7 @@ private void update() {
     }
 
     private int changeActiveVersion(int id) {
-
+        makeVersion(currentVersion);
         if (!codeTree.idExists(id)) {
             logger.error("Quickpose: Attempted to change active version to invalid Id"+id);
             archiver.info("Quickpose: Attempted to change active version to invalid Id"+id);
@@ -635,62 +553,34 @@ private void update() {
             for (File f : versionListing) {
                 if (FilenameUtils.isExtension(f.getName(), "pde")) {
                     File newFile = new File(sketchFolder.getAbsolutePath() + "/" + f.getName());
-                    copyFile(f, newFile);
+                    Utils.copyFile(f, newFile);
                 }
                 if (f.getName() == "render.png"&& FileUtils.sizeOf(f) > FileUtils.ONE_KB) {
                     renderLock.lock();
                     try{
                         File newFile = new File(sketchFolder.getAbsolutePath() + "/" + f.getName());
-                        copyFile(f, newFile);
+                        Utils.copyFile(f, newFile);
                     }finally{
                         renderLock.unlock();
                     }
                 }
             }
         }
-        
+        if (codeTree.getNode(id).children.size() == 0){
+            editor.getPdeTextArea().setEditable(true);
+            editor.getTextArea().getPainter().setBackground(Color.WHITE);
+            editor.statusEmpty();
+        } else {
+            editor.getPdeTextArea().setEditable(false);
+            editor.statusMessage("Sketch is Read Only Because It Has Child Nodes",EditorStatus.NOTICE);
+            editor.getTextArea().getPainter().setBackground(Color.LIGHT_GRAY);
+        }
+        editor.getTextArea().setCaretPosition(codeTree.getNode(id).data.caretPosition);
         editor.getSketch().reload();
         editor.handleSave(true);
-        // Something here breaks REPL mode
-        if (codeTree.getNode(id).children.size() == 0){
-            // editor.getSketch().getMainFile().setWritable(true);
-            editor.getTextArea().setEditable(true);
-            editor.getTextArea().getPainter().setBackground(Color.WHITE);
-            //editor.getConsole().setName("Dont");
-            editor.statusEmpty();
-            //editor.repaint();
-        } else {
-            // editor.getSketch().getMainFile().setWritable(false);
-            // editor.getSketch().getMainFile().setReadOnly();
-            editor.getTextArea().setEditable(false);
-            editor.statusMessage("Sketch is Read Only Because It Has Child Nodes",EditorStatus.NOTICE);
-            //editor.statusNotice("Sketch is Read Only Because It Has Child Nodes");
-            editor.getTextArea().getPainter().setBackground(Color.LIGHT_GRAY);
-            //editor.repaint();
-        }
-        // base.getActiveEditor().getSketch().updateSketchCodes();
-        
-        editor.getTextArea().setCaretPosition(codeTree.getNode(id).data.caretPosition);
-        //System.out.println("setcaretto"+codeTree.getNode(id).data.caretPosition);
-    
-        editor.getSketch().reload();
-        // sketchListing = sketchFolder.listFiles();
-        // if (sketchListing != null) {
-        //     for (File f : sketchListing) {
-        //         if (FilenameUtils.equals(f.getName(), "render.png")) {
-        //             renderLock.lock();
-        //             try{
-        //                 f.delete();
-        //             }finally{
-        //                 renderLock.unlock();
-        //             }
-        //         }
-        //     }
-        // }
-    
-        
+        editor.getToolbar().handleRun(0);
+        editor.on
         return id;
-        // System.out.println("Switched version to "+ id );
     }
 
     private String makeVersion(int id) {
@@ -703,13 +593,13 @@ private void update() {
             for (File f : dirListing) {
                 if (FilenameUtils.isExtension(f.getName(), "pde")) {
                     File newFile = new File(folder.getAbsolutePath() + "/" + f.getName());
-                    copyFile(f, newFile);
+                    Utils.copyFile(f, newFile);
                 }
                 if (FilenameUtils.equals(f.getName(), "render.png") && FileUtils.sizeOf(f) > FileUtils.ONE_KB) {
                     renderLock.lock();
                     try{
                         File newFile = new File(folder.getAbsolutePath() + "/" + f.getName());
-                        copyFile(f, newFile);
+                        Utils.copyFile(f, newFile);
                     }finally{
                         renderLock.unlock();
                     }
@@ -720,6 +610,67 @@ private void update() {
     
         String relPath = sketchFolder.toPath().relativize(folder.toPath()).toString();
         return relPath;
+    }
+
+    private void dataSetup() {
+        editor = base.getActiveEditor();
+        sketchFolder = editor.getSketch().getFolder();
+        String sketchPath = sketchFolder.getAbsolutePath();
+        versionsCode = new File(sketchPath + "/" + "Quickpose");
+        versionsCode.mkdir();
+        assetsFolder = new File(versionsCode.toPath() + "/" + "assets");
+        assetsFolder.mkdir();
+        archiveFolder = new File(versionsCode.toPath() + "/" + "archive");
+        archiveFolder.mkdir();
+        exportFolder = new File(versionsCode.toPath() + "/" + "exports");
+        exportFolder.mkdir();
+
+        editor.addKeyListener(l);
+
+        try {  
+            // This block configure the logger with handler and formatter  
+            logFileHandler = new FileHandler(archiveFolder.getPath()+"/quickpose.log",true);  
+            archiver.addHandler(logFileHandler);
+            SimpleFormatter formatter = new SimpleFormatter();  
+            logFileHandler.setFormatter(formatter);  
+            archiver.setUseParentHandlers(false);
+    
+        } catch (SecurityException e) {  
+            e.printStackTrace();  
+        } catch (IOException e) {  
+            e.printStackTrace();  
+        }  
+
+        versionsTree = new File(versionsCode.getAbsolutePath() + "/tree.json");
+        if (!versionsTree.exists()) {
+            File starterCodeFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/QuickposeDefault.pde");
+            File starterCatFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/cat.png");
+            File startertldr = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/quickpose.tldr");
+            logger.warn("Quickpose: No Existing Quickpose Session Detected - creating a new verison history");
+            if (starterCodeFile.exists()) {
+                JEditTextArea textarea = editor.getTextArea();
+                textarea.getActionForKeyStroke(aKeyStroke)
+                if(textarea.getText().length()>0){
+                    Utils.commentMainFile(textarea, editor.getCommentPrefix());
+                }
+                try {
+                    textarea.setText(Utils.readFile(starterCodeFile)+"\n"+textarea.getText());
+                    editor.getSketch().save();
+                    editor.getSketch().getCode(0).save();
+                    FileUtils.copyFile(starterCatFile, new File(assetsFolder.toPath()+"/cat.png"));
+                    FileUtils.copyFile(startertldr, new File(versionsCode.toPath()+"/quickpose.tldr"));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                editor.handleSave(true);
+            }
+            codeTree = new Tree(new Data(makeVersion(0)));
+            changeActiveVersion(0);
+            writeJSONFromRoot();
+        } else {
+            logger.info("Quickpose: Existing Quickpose Session Found! Loading...");
+            readJSONToRoot();
+        }
     }
     private void writeJSONFromRoot() {
         if (versionsTree.exists()) {
@@ -794,15 +745,6 @@ private void update() {
         return -1;
     }
 
-    private static void copyFile(File src, File dest) {
-        try {
-            if (!FileUtils.contentEquals(src, dest)) {
-                Files.copy(src.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            System.out.println(e.getMessage());
-        }
-    }
+
 }
 
