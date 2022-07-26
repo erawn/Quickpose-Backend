@@ -33,9 +33,12 @@ import static spark.Spark.*;
 import com.fasterxml.jackson.jr.ob.JSON;
 
 import java.awt.Color;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FilenameFilter;
 import java.io.OutputStream;
 import java.net.URI;
 import java.io.IOException;
@@ -66,6 +69,7 @@ import net.lingala.zip4j.ZipFile;
 
 import javax.servlet.*;
 import javax.swing.JTextArea;
+import javax.swing.KeyStroke;
 import javax.swing.text.BadLocationException;
 
 import org.slf4j.LoggerFactory;
@@ -98,6 +102,7 @@ import processing.app.ui.EditorStatus;
 import processing.core.*;
 import processing.app.syntax.*;
 import spark.Spark;
+import java.awt.event.*;
 
 import java.util.concurrent.*;
 
@@ -108,7 +113,7 @@ import java.time.LocalDateTime;
 // be the same as the value defined for project.name in your build.properties
 public class Quickpose implements Tool {
     Base base;
-    boolean setup = false;
+    volatile boolean setup = false;
     private File sketchFolder;
     private File assetsFolder;
     private File archiveFolder;
@@ -131,10 +136,8 @@ public class Quickpose implements Tool {
 
     FileHandler logFileHandler; 
     
-
     Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     ThumbnailWebSocket handler = new ThumbnailWebSocket(sessions,logger,archiver);
-
 
     Runnable updateLoop = new Runnable() {
         public void run() {
@@ -158,38 +161,39 @@ public class Quickpose implements Tool {
     public void run() {
         //make new if on existing file 
         if (base.getActiveEditor().getSketch().isUntitled()) {
-            Messages.showMessage("Quickpose: Unsaved Sketch","Quickpose: Unsaved Sketch -- Please Save Sketch and Run Again");
             base.getActiveEditor().handleSave(false);
-
-        } else {
-            System.out.println("##tool.name## (v##tool.prettyVersion##) by ##author.name##");
-            dataSetup();
-            if (setup == false) {
-                networkSetup();
-            }else{
-                Spark.init();
-            }
-            if (executor != null) {
+        }
+        executor = Executors.newScheduledThreadPool(1);
+        executor.scheduleAtFixedRate(updateLoop, 0, 100, TimeUnit.MILLISECONDS);
+        
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                stop();
+                executor.shutdown();
+                if (executor.awaitTermination(100, TimeUnit.MILLISECONDS)) {
+                executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
                 executor.shutdownNow();
             }
-            executor = Executors.newScheduledThreadPool(2);
-            executor.scheduleAtFixedRate(updateLoop, 0, 100, TimeUnit.MILLISECONDS);
-            
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                try {
-                  stop();
-                  executor.shutdown();
-                  if (executor.awaitTermination(100, TimeUnit.MILLISECONDS)) {
-                    executor.shutdownNow();
-                  }
-                } catch (InterruptedException e) {
-                  executor.shutdownNow();
-                }
-              }));
-              setup = true;
-        }
+            }));
+        
     }
 private void update() {
+    if(setup == false){
+        if(base.getActiveEditor().getSketch().isSaving()){
+            return;
+        }
+        System.out.println("##tool.name## (v##tool.prettyVersion##) by ##author.name##");
+        dataSetup();
+        networkSetup();
+        Spark.init();
+        if (executor != null) {
+            executor.shutdownNow();
+        }
+
+            setup = true;
+    }
     try {
         if(renderLock.tryLock(90, TimeUnit.MILLISECONDS)){
             BSONObject obj = new BasicBSONObject();
@@ -579,7 +583,6 @@ private void update() {
         editor.getSketch().reload();
         editor.handleSave(true);
         editor.getToolbar().handleRun(0);
-        editor.on
         return id;
     }
 
@@ -625,7 +628,16 @@ private void update() {
         exportFolder = new File(versionsCode.toPath() + "/" + "exports");
         exportFolder.mkdir();
 
-        editor.addKeyListener(l);
+
+        class checkpoint implements ActionListener {
+            public void actionPerformed(ActionEvent evt) {
+                checkpoint(currentVersion);
+                System.out.println("saved!");
+            }
+        }
+        final ActionListener CHECKPOINT = new checkpoint();
+        editor.getTextArea().getInputHandler().addKeyBinding("C+S", CHECKPOINT);
+
 
         try {  
             // This block configure the logger with handler and formatter  
@@ -649,7 +661,6 @@ private void update() {
             logger.warn("Quickpose: No Existing Quickpose Session Detected - creating a new verison history");
             if (starterCodeFile.exists()) {
                 JEditTextArea textarea = editor.getTextArea();
-                textarea.getActionForKeyStroke(aKeyStroke)
                 if(textarea.getText().length()>0){
                     Utils.commentMainFile(textarea, editor.getCommentPrefix());
                 }
@@ -657,8 +668,10 @@ private void update() {
                     textarea.setText(Utils.readFile(starterCodeFile)+"\n"+textarea.getText());
                     editor.getSketch().save();
                     editor.getSketch().getCode(0).save();
-                    FileUtils.copyFile(starterCatFile, new File(assetsFolder.toPath()+"/cat.png"));
-                    FileUtils.copyFile(startertldr, new File(versionsCode.toPath()+"/quickpose.tldr"));
+                    File catAsset = new File(assetsFolder.toPath()+"/cat.png");
+                    File quickposeFile = new File(versionsCode.toPath()+"/quickpose.tldr");
+                    FileUtils.copyFile(starterCatFile, catAsset);
+                    FileUtils.copyFile(startertldr, quickposeFile);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -671,6 +684,40 @@ private void update() {
             logger.info("Quickpose: Existing Quickpose Session Found! Loading...");
             readJSONToRoot();
         }
+    }
+
+    private void checkpoint(int id){
+                // base.getActiveEditor().getSketch().reload();
+                editor.handleSave(true);
+                File folder = new File(versionsCode.getAbsolutePath() + "/_" + id);
+                folder.mkdir();
+                FilenameFilter filter = (dir, name) -> name.endsWith(".pde");
+                File prevCheckpointFolder = new File(folder.getAbsolutePath() + "/checkpoint" + (codeTree.getNode(id).data.checkpoints-1));
+                if(!Utils.compareDirs(folder, prevCheckpointFolder)){
+                    File checkpointFolder = new File(folder.getAbsolutePath() + "/checkpoint" + codeTree.getNode(id).data.checkpoints);
+                    checkpointFolder.mkdir();
+                    codeTree.getNode(id).data.checkpoints++;
+                    File[] dirListing = folder.listFiles();
+                    if (dirListing != null) {
+                        for (File f : dirListing) {
+                            if (FilenameUtils.isExtension(f.getName(), "pde")) {
+                                File newFile = new File(checkpointFolder.getAbsolutePath() + "/" + f.getName());
+                                Utils.copyFile(f, newFile);
+                            }
+                            if (FilenameUtils.equals(f.getName(), "render.png") && FileUtils.sizeOf(f) > FileUtils.ONE_KB) {
+                                renderLock.lock();
+                                try{
+                                    File newFile = new File(checkpointFolder.getAbsolutePath() + "/" + f.getName());
+                                    Utils.copyFile(f, newFile);
+                                }finally{
+                                    renderLock.unlock();
+                                }
+                                
+                            }
+                        }
+                    }
+                }
+                
     }
     private void writeJSONFromRoot() {
         if (versionsTree.exists()) {

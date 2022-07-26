@@ -9,6 +9,9 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 
@@ -40,6 +43,31 @@ public class Utils {
         }catch(IOException e){
         } 
     }
+
+    public static Boolean compareDirs(File a, File b){
+        if(a.isDirectory() && b.isDirectory()){
+            for(File f_a : a.listFiles()){
+                File f_b = new File(b.getAbsolutePath()+"/"+f_a.getName());
+                try {
+                    if(FileUtils.directoryContains(b, f_b)){
+                        if(!FileUtils.contentEquals(f_b, f_a)){
+                            return false;
+                        }
+                    }else{
+                        return false;
+                    }
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+  
     public static void commentMainFile(JEditTextArea textarea, String commentPrefix){
         System.out.println(textarea.getFirstLine() + "first");
         System.out.println(textarea.getLastLine() + "last");
