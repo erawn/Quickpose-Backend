@@ -184,7 +184,7 @@ private void update() {
                 try{
                     BSONObject obj = new BasicBSONObject();
                     obj.put("version_id", currentVersion);
-                    obj.put("project_name", editor.getSketch().getName());
+                    obj.put("project_name", sketchFolder.getName());
                     String msg = messages.poll();
                     while(msg != null){
                         if(msg.contentEquals("/tldrfile") && !(obj.containsField("tldrfile"))){
@@ -307,6 +307,7 @@ private void update() {
                     }
                 }else{
                     editor.statusMessage("Quickpose: old tldr file in browser, please reload browser window",EditorStatus.WARNING);
+                    archiver.info("Old Tldr File Conflict: Project Name: "+proj+"|Sketch Name:"+sketchFolder.getName());
                     request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement(""));
                     // getPart needs to use same "name" as input field in form
                     try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
