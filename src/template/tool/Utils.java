@@ -22,6 +22,10 @@ public final class Utils {
         logger = log;
         archiver = archive; 
     }
+
+    public static org.slf4j.Logger getLogger(){
+        return logger;
+    }
     
 	public static String getPath(String theFilename) {
 		if (theFilename.startsWith("/")) {
@@ -42,15 +46,21 @@ public final class Utils {
                     out.setLastModified(in.lastModified());
                 } 
                 catch (IOException e) {
+                    archiver.info(e.getMessage());
                 }
                 finally {
-                    if (inStream != null) inStream.close();
+                    outStream.flush();
+                
                     if (outStream != null) outStream.close();
-                    if (inChannel != null) inChannel.close();
                     if (outChannel != null) outChannel.close();
+                    if (inStream != null) inStream.close();
+                    if (inChannel != null) inChannel.close();
+           
+               
                 }
             }
         }catch(IOException e){
+            archiver.info(e.getMessage());
         } 
     }
 //oldFolder is base folder (aka sketchFolder), new folder is the version folder
@@ -79,7 +89,7 @@ public final class Utils {
                     }
                 } catch (IOException e) {
                     //e.printStackTrace();
-                    logger.info(e.getMessage());
+                    archiver.info(e.getMessage());
                 }
             }
             return true;
@@ -125,7 +135,7 @@ public final class Utils {
                 } 
                 br.close();
             } catch (IOException e) { 
-                //System.out.println(e);
+                archiver.info(e.getMessage());
                 return "";
             }
         }

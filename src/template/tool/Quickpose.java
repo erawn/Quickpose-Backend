@@ -62,6 +62,7 @@ import javax.servlet.*;
 import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import ch.qos.logback.core.rolling.RollingFileAppender;
 
 import org.eclipse.jetty.websocket.api.*;
 
@@ -137,7 +138,6 @@ public class Quickpose implements Tool {
         
         Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         root.setLevel(Level.ERROR);
-        archiver.setUseParentHandlers(false);
         Utils.init(logger,archiver);
 
     }
@@ -155,6 +155,7 @@ public class Quickpose implements Tool {
         
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
+                archiver.info("Session Shutdown");
                 stop();
                 executor.shutdown();
                 if (executor.awaitTermination(100, TimeUnit.MILLISECONDS)) {
@@ -226,9 +227,9 @@ private void update() {
                 }
             }
         } catch (InterruptedException e) {
-            logger.info(e.getMessage());
+            archiver.info(e.getMessage());
         } catch (IOException e) {
-            logger.info(e.getMessage());
+            archiver.info(e.getMessage());
         }
     }
 }
@@ -265,7 +266,7 @@ private void update() {
                 //System.out.println(json);
                 return json;
             }catch(Error e){
-                logger.error(e.getMessage());
+                archiver.info(e.getMessage());
             }
             response.status(500);
             return response;
@@ -273,7 +274,7 @@ private void update() {
         });
         get("/fork/:id", (request, response) -> {
             int childID = 0;
-            logger.info("Fork ID:" + Integer.parseInt(request.params(":id")));
+            //archiver.info("Fork ID:" + Integer.parseInt(request.params(":id")));
             childID = fork(Integer.parseInt(request.params(":id")));
             if (childID > 0) {
                 archiver.info("Forked"+Integer.parseInt(request.params(":id")) + "to" + childID);
@@ -289,14 +290,6 @@ private void update() {
             currentVersion = changeActiveVersion(Integer.parseInt(request.params(":id")));
             return currentVersion;
         });
-        // get("/currentVersion", (request, response) -> {
-        //     // System.out.println("Current ID Request :" + currentVersion);
-        //     return currentVersion;
-        // });
-        // get("/projectName", (request, response) -> {
-        //     // System.out.println("Current ID Request :" + currentVersion);
-        //     return sketchFolder.getName();
-        // });
         post("/tldrfile", (request, response) -> {
             File dest = new File(versionsCode.toPath() + "/quickpose.tldr");
             File f = new File(versionsCode.toPath() + "/quickposeTemp.tldr");
@@ -396,6 +389,7 @@ private void update() {
             }
         });
         post("/exportbycolor", (request, response) -> {
+     
             String ids = request.queryParams("ids");
             String color = request.queryParams("color");
             if(!ids.contentEquals("")){
@@ -406,7 +400,7 @@ private void update() {
                 }
                 File export = new File(exportFolder.toPath()+"/"+color+"_export_"+LocalDateTime.now().toString().replace(':', '-'));
                 export.mkdir();
-
+                archiver.info("Export ids:"+ids+"|by color:"+color);
                 for(Integer i : versions){
                     File versionFolder = new File(versionsCode.getAbsolutePath() + "/_" + i);
                     if(versionFolder.exists()){
@@ -511,7 +505,7 @@ private void update() {
             }
         }
 
-        logger.error("Quickpose: Attempted Fork: Node Doesn't Exist");
+        archiver.info("Quickpose: Attempted Fork: Node Doesn't Exist");
         return -1;
     }
 
@@ -519,7 +513,7 @@ private void update() {
         makeVersion(currentVersion);
         promptCheckpoint(id);
         if (!codeTree.idExists(id)) {
-            logger.error("Quickpose: Attempted to change active version to invalid Id"+id);
+            archiver.info("Quickpose: Attempted to change active version to invalid Id"+id);
             archiver.info("Quickpose: Attempted to change active version to invalid Id"+id);
             return -1;
         }
@@ -557,18 +551,18 @@ private void update() {
         }
         if (codeTree.getNode(id).children.size() == 0){
             editor.getPdeTextArea().setEditable(true);
-            editor.getTextArea().getPainter().setBackground(Color.WHITE);
+            //editor.getTextArea().getPainter().setBackground(Color.WHITE);
             editor.statusEmpty();
         } else {
             editor.getPdeTextArea().setEditable(false);
             editor.statusMessage("Sketch is Read Only Because It Has Child Nodes",EditorStatus.NOTICE);
-            editor.getTextArea().getPainter().setBackground(Color.LIGHT_GRAY);
+            //editor.getTextArea().getPainter().setBackground(Color.LIGHT_GRAY);
         }
         editor.getTextArea().setCaretPosition(codeTree.getNode(id).data.caretPosition);
         editor.getSketch().reload();
         editor.handleSave(true);
         //editor.getToolbar().addPropertyChangeListener(listener);
-        editor.getToolbar().handleRun(0);
+        //editor.getToolbar().handleRun(0);
         return id;
     }
 
@@ -625,16 +619,17 @@ private void update() {
 
         try {  
             // This block configure the logger with handler and formatter  
-            logFileHandler = new FileHandler(archiveFolder.getPath()+"/quickpose.log",true);  
+            logFileHandler = new FileHandler(archiveFolder.getPath()+"/quickpose_%g.log",FileUtils.ONE_MB * 50, 10000, true);  
             archiver.addHandler(logFileHandler);
             SimpleFormatter formatter = new SimpleFormatter();  
             logFileHandler.setFormatter(formatter);  
             archiver.setUseParentHandlers(false);
+            //) logger);
     
         } catch (SecurityException e) {  
-            logger.info(e.getMessage()); 
+            archiver.info(e.getMessage()); 
         } catch (IOException e) {  
-            logger.info(e.getMessage());
+            archiver.info(e.getMessage());
         }  
 
         versionsTree = new File(versionsCode.getAbsolutePath() + "/tree.json");
@@ -642,7 +637,8 @@ private void update() {
             File starterCodeFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/QuickposeDefault.pde");
             File starterCatFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/cat.png");
             File startertldr = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/quickpose.tldr");
-            logger.warn("Quickpose: No Existing Quickpose Session Detected - creating a new verison history");
+            archiver.info("Quickpose: No Existing Quickpose Session Detected - creating a new verison history");
+            //archiver.info("Creating New Quickpose Session");
             if (starterCodeFile.exists()) {
                 JEditTextArea textarea = editor.getTextArea();
                 if(textarea.getText().length()>0){
@@ -657,7 +653,7 @@ private void update() {
                     Utils.copyFile(starterCatFile, catAsset);
                     Utils.copyFile(startertldr, quickposeFile);
                 } catch (IOException e) {
-                    logger.info(e.getMessage());
+                    archiver.info(e.getMessage());
                 }
                 editor.handleSave(true);
             }
@@ -666,7 +662,8 @@ private void update() {
             changeActiveVersion(0);
             writeJSONFromRoot();
         } else {
-            logger.info("Quickpose: Existing Quickpose Session Found! Loading...");
+            //archiver.info("Retriving Existing Quickpose Session");
+            archiver.info("Quickpose: Existing Quickpose Session Found! Loading...");
             readJSONToRoot();
         }
     }
@@ -732,12 +729,12 @@ private void update() {
         try {
             versionsTree.createNewFile();
         } catch (IOException e) {
-            logger.error("Exception Occured in writeJSONFromRoot: " + e.toString());
+            archiver.info("Exception Occured in writeJSONFromRoot: " + e.toString());
         }
         try {
             JSON.std.write(JSON.std.anyFrom(codeTree.getJSONSave(currentVersion,sketchFolder.getName())), versionsTree.getAbsoluteFile());
         } catch (IOException e) {
-            logger.error("Error Saving JSON to File");
+            archiver.info("Error Saving JSON to File");
         }
     }
 
@@ -749,7 +746,7 @@ private void update() {
             encoded = Files.readAllBytes(Paths.get(versionsTree.getAbsolutePath()));
             input = new String(encoded, "UTF-8");
         } catch (Exception e) {
-            logger.info(e.getMessage());
+            archiver.info(e.getMessage());
         }
         try {
             JSONObject graph = new JSONObject(input);
@@ -758,7 +755,7 @@ private void update() {
 
             int rootInd = JSONSearch(nodes, 0);
             if (rootInd == -1) {
-                logger.error("Couldn't Find Root Node on Import");
+                archiver.info("Couldn't Find Root Node on Import");
             }
             Data root = new Data(nodes.getJSONObject(rootInd).getString("path"));
             root.setCaretPosition(nodes.getJSONObject(rootInd).getInt("caretPosition"));
@@ -790,14 +787,14 @@ private void update() {
                             }
                         }
                         parent.setChild(data, target);
-                        logger.info("created child : " + target + " from parent : "+ source);
+                        archiver.info("created child : " + target + " from parent : "+ source);
                     }
                 }
             }
             codeTree = importTree;
             changeActiveVersion(graph.getInt("CurrentNode"));
         } catch (Exception e) {
-            logger.error("Exception in Building Tree : " + e.toString());
+            archiver.info("Exception in Building Tree : " + e.toString());
         }
     }
 

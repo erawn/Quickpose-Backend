@@ -55,7 +55,7 @@ public class ThumbnailWebSocket {
                             message.rewind();
                             session.getRemote().sendBytes(message);
                         } catch (IOException e) {
-                            logger.info(e.getMessage());
+                            archiver.info(e.getMessage());
                         }
                     }
                 }

@@ -105,7 +105,7 @@ public class Tree {
 			Graph.put("ProjectName", projectName);
 			return Graph.toString();
 		} catch (Error e) {
-			System.out.println(e.getMessage()+"Exception Occured : getJSON()");
+			Utils.getLogger().error(e.getMessage());
 		}
 		return "";
 	}
