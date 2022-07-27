@@ -196,7 +196,8 @@ private void update() {
                         msg = messages.poll();
                     }
                     File render = new File(sketchFolder.getAbsolutePath() + "/render.png");
-                    File storedRender = new File(versionsCode.getAbsolutePath() + "/_" + currentVersion + "/render.png");
+                    File currentVersionFolder = new File(versionsCode.getAbsolutePath() + "/_" + currentVersion);
+                    File storedRender = new File(currentVersionFolder + "/render.png");
                     boolean fileModified = base.getActiveEditor().getSketch().isModified();
                     boolean renderModified = render.exists() && (!storedRender.exists() || render.lastModified() != storedRender.lastModified());
                     codeTree.getNode(currentVersion).data.setCaretPosition(editor.getTextArea().getCaretPosition());
@@ -206,6 +207,11 @@ private void update() {
                         Utils.copyFile(render, storedRender);
                         byte[] bytes = FileUtils.readFileToByteArray(storedRender);
                         obj.put("image", bytes);
+                        if(!shouldCheckpoint(currentVersion)){
+                            File checkpointFolder = new File(currentVersionFolder.getAbsolutePath() + "/checkpoint" + (codeTree.getNode(currentVersion).data.checkpoints-1));
+                            File checkpointRender = new File(checkpointFolder.getAbsolutePath() +"/render.png");
+                            Utils.copyFile(render,checkpointRender);
+                        }
                     }
                     handler.broadcastData(ByteBuffer.wrap(BSON.encode(obj)));
 
@@ -669,6 +675,11 @@ private void update() {
         }
     }
     private void promptCheckpoint(int id){
+        if(shouldCheckpoint(id)){
+            checkpoint(id);
+        }  
+    }
+    private boolean shouldCheckpoint(int id){
         Boolean shouldCheckpoint = false;
         editor.handleSave(true);
         File folder = new File(versionsCode.getAbsolutePath() + "/_" + id);
@@ -689,9 +700,7 @@ private void update() {
                 shouldCheckpoint = true;
             }
         }
-        if(shouldCheckpoint){
-            checkpoint(id);
-        }  
+        return shouldCheckpoint;
     }
 
     private void checkpoint(int id){
