@@ -33,29 +33,19 @@ import static spark.Spark.*;
 import com.fasterxml.jackson.jr.ob.JSON;
 
 import java.awt.Color;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FilenameFilter;
 import java.io.OutputStream;
-import java.net.URI;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.FileHandler;
 import java.util.logging.SimpleFormatter;
 import java.nio.ByteBuffer;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -68,9 +58,6 @@ import net.lingala.zip4j.model.enums.CompressionLevel;
 import net.lingala.zip4j.ZipFile;
 
 import javax.servlet.*;
-import javax.swing.JTextArea;
-import javax.swing.KeyStroke;
-import javax.swing.text.BadLocationException;
 
 import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.Level;
@@ -85,22 +72,15 @@ import org.bson.BSON;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import processing.app.Base;
-import processing.app.Language;
-import processing.app.Messages;
-import processing.app.Mode;
-import processing.app.Sketch;
-import processing.app.SketchCode;
 import processing.app.syntax.JEditTextArea;
-import processing.app.syntax.SyntaxDocument;
 import processing.app.tools.Tool;
 import processing.app.ui.Editor;
 import processing.app.ui.EditorStatus;
-import processing.core.*;
-import processing.app.syntax.*;
+// import processing.core.*;
+// import processing.app.syntax.*;
 import spark.Spark;
 import java.awt.event.*;
 
@@ -132,12 +112,14 @@ public class Quickpose implements Tool {
    
     private org.slf4j.Logger logger = LoggerFactory.getLogger(Quickpose.class);
     
-    private java.util.logging.Logger archiver = java.util.logging.Logger.getLogger("ArchiveLog");  
+    private java.util.logging.Logger archiver = java.util.logging.Logger.getLogger("ArchiveLog"); 
+
 
     FileHandler logFileHandler; 
     
     Queue<Session> sessions = new ConcurrentLinkedQueue<>();
-    ThumbnailWebSocket handler = new ThumbnailWebSocket(sessions,logger,archiver);
+    Queue<String> messages = new ConcurrentLinkedQueue<>();
+    ThumbnailWebSocket handler = new ThumbnailWebSocket(messages,sessions,logger,archiver);
 
     Runnable updateLoop = new Runnable() {
         public void run() {
@@ -156,12 +138,17 @@ public class Quickpose implements Tool {
         Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         root.setLevel(Level.ERROR);
         archiver.setUseParentHandlers(false);
+        Utils.init(logger,archiver);
+
     }
 
     public void run() {
         //make new if on existing file 
         if (base.getActiveEditor().getSketch().isUntitled()) {
             base.getActiveEditor().handleSave(false);
+        }
+        if (executor != null) {
+            executor.shutdownNow();
         }
         executor = Executors.newScheduledThreadPool(1);
         executor.scheduleAtFixedRate(updateLoop, 0, 100, TimeUnit.MILLISECONDS);
@@ -177,8 +164,8 @@ public class Quickpose implements Tool {
                 executor.shutdownNow();
             }
             }));
-        
     }
+
 private void update() {
     if(setup == false){
         if(base.getActiveEditor().getSketch().isSaving()){
@@ -188,55 +175,61 @@ private void update() {
         dataSetup();
         networkSetup();
         Spark.init();
-        if (executor != null) {
-            executor.shutdownNow();
-        }
+        setup = true;
+    }else{
+        try {
+        
+            if(renderLock.tryLock(90, TimeUnit.MILLISECONDS)){
+                try{
+                    BSONObject obj = new BasicBSONObject();
+                    obj.put("version_id", currentVersion);
+                    obj.put("project_name", editor.getSketch().getName());
+                    String msg = messages.poll();
+                    while(msg != null){
+                        if(msg.contentEquals("/tldrfile") && !(obj.containsField("tldrfile"))){
+                            File f = new File(versionsCode.toPath() + "/quickpose.tldr");
+                            byte[] bytes = FileUtils.readFileToByteArray(f);
+                            obj.put("tldrfile", bytes);
+                            obj.put("versions",codeTree.getJSONSave(currentVersion, sketchFolder.getName()).getBytes());
+                        }
+                        msg = messages.poll();
+                    }
+                    File render = new File(sketchFolder.getAbsolutePath() + "/render.png");
+                    File storedRender = new File(versionsCode.getAbsolutePath() + "/_" + currentVersion + "/render.png");
+                    boolean fileModified = base.getActiveEditor().getSketch().isModified();
+                    boolean renderModified = render.exists() && (!storedRender.exists() || render.lastModified() != storedRender.lastModified());
+                    codeTree.getNode(currentVersion).data.setCaretPosition(editor.getTextArea().getCaretPosition());
+                    if (fileModified) {
+                        makeVersion(currentVersion);
+                    } else if (renderModified && FileUtils.sizeOf(render) > FileUtils.ONE_KB) {
+                        Utils.copyFile(render, storedRender);
+                        byte[] bytes = FileUtils.readFileToByteArray(storedRender);
+                        obj.put("image", bytes);
+                    }
+                    handler.broadcastData(ByteBuffer.wrap(BSON.encode(obj)));
 
-            setup = true;
-    }
-    try {
-        if(renderLock.tryLock(90, TimeUnit.MILLISECONDS)){
-            BSONObject obj = new BasicBSONObject();
-            obj.put("version_id", currentVersion);
-            obj.put("project_name", editor.getSketch().getName());
-            try{
-                //System.out.println("update");
-                File render = new File(sketchFolder.getAbsolutePath() + "/render.png");
-                File storedRender = new File(versionsCode.getAbsolutePath() + "/_" + currentVersion + "/render.png");
-                boolean fileModified = base.getActiveEditor().getSketch().isModified();
-                boolean renderModified = render.exists() && (!storedRender.exists() || render.lastModified() != storedRender.lastModified());
-                codeTree.getNode(currentVersion).data.setCaretPosition(editor.getTextArea().getCaretPosition());
-                if (fileModified) {
-                    makeVersion(currentVersion);
-                } else if (renderModified && FileUtils.sizeOf(render) > FileUtils.ONE_KB) {
-                    Utils.copyFile(render, storedRender);
-                    byte[] bytes = FileUtils.readFileToByteArray(storedRender);
-                    obj.put("image", bytes);
+                        
+                    if (codeTree.getNode(currentVersion).children.size() != 0){
+                        //editor.statusNotice("Sketch is Read Only Because It Has Child Nodes");
+                        editor.statusMessage("Sketch is Read Only Because It Has Child Nodes",EditorStatus.NOTICE);
+                    }else if (editor.getStatusMessage()=="Sketch is Read Only Because It Has Child Nodes"){
+                        editor.statusEmpty();
+                    }
+
+                    if(sessions.isEmpty()){
+                        editor.statusMessage("Quickpose: Looking for Browser Session...",EditorStatus.WARNING);
+                    }else if (editor.getStatusMessage()=="Quickpose: Looking for Browser Session..."){
+                        editor.statusMessage("Quickpose: Found Browser Session",EditorStatus.NOTICE);
+                    }
+                }finally {
+                    renderLock.unlock();
                 }
-            }finally {
-                renderLock.unlock();
             }
-            handler.broadcastData(ByteBuffer.wrap(BSON.encode(obj)));
+        } catch (InterruptedException e) {
+            logger.info(e.getMessage());
+        } catch (IOException e) {
+            logger.info(e.getMessage());
         }
-    } catch (InterruptedException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-    } catch (IOException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-    }
-
-    if (codeTree.getNode(currentVersion).children.size() != 0){
-        //editor.statusNotice("Sketch is Read Only Because It Has Child Nodes");
-        editor.statusMessage("Sketch is Read Only Because It Has Child Nodes",EditorStatus.NOTICE);
-    }else if (editor.getStatusMessage()=="Sketch is Read Only Because It Has Child Nodes"){
-        editor.statusEmpty();
-    }
-
-    if(sessions.isEmpty()){
-        editor.statusMessage("Quickpose: Looking for Browser Session...",EditorStatus.WARNING);
-    }else if (editor.getStatusMessage()=="Quickpose: Looking for Browser Session..."){
-        editor.statusMessage("Quickpose: Found Browser Session",EditorStatus.NOTICE);
     }
 }
 
@@ -366,7 +359,7 @@ private void update() {
                         if(backups.size() > 100){
                             ZipParameters zipParameters = new ZipParameters();
                             zipParameters.setCompressionLevel(CompressionLevel.ULTRA);
-                            System.out.println(backups.toString());
+                            //System.out.println(backups.toString());
                             try (ZipFile archiveZip = new ZipFile(archiveFolder.getAbsolutePath()+"/archive" + LocalDateTime.now().toString().replace(':', '-') + ".zip")) {
                                 archiveZip.setRunInThread(false);
                                 archiveZip.createSplitZipFile(fileList, zipParameters, true, 300000000);
@@ -374,10 +367,7 @@ private void update() {
                                     backup.delete();
                                 }
                             }
-                        }
-                        
-
-                        
+                        }  
                     }
                 }
             } finally {
@@ -437,7 +427,6 @@ private void update() {
                     }
                 }  
             }
-            
             return "Success";
         });
 
@@ -508,8 +497,6 @@ private void update() {
         });
     }
 
-
-
     private int fork(int id) {
         if (codeTree.idExists(id)) {
             Node parent = codeTree.getNode(id);
@@ -520,16 +507,17 @@ private void update() {
                 archiver.info("Fork Version:"+id+"|To:"+child.id);
                 changeActiveVersion(child.id);
                 writeJSONFromRoot();
-            
                 return child.id;
             }
         }
+
         logger.error("Quickpose: Attempted Fork: Node Doesn't Exist");
         return -1;
     }
 
     private int changeActiveVersion(int id) {
         makeVersion(currentVersion);
+        promptCheckpoint(id);
         if (!codeTree.idExists(id)) {
             logger.error("Quickpose: Attempted to change active version to invalid Id"+id);
             archiver.info("Quickpose: Attempted to change active version to invalid Id"+id);
@@ -545,12 +533,9 @@ private void update() {
                     }finally{
                         renderLock.unlock();
                     }
-
-                    
                 }
             }
         }
-        
         File versionFolder = new File(versionsCode.getAbsolutePath() + "/_" + id);
         File[] versionListing = versionFolder.listFiles();
         if (versionListing != null) {
@@ -582,12 +567,12 @@ private void update() {
         editor.getTextArea().setCaretPosition(codeTree.getNode(id).data.caretPosition);
         editor.getSketch().reload();
         editor.handleSave(true);
+        //editor.getToolbar().addPropertyChangeListener(listener);
         editor.getToolbar().handleRun(0);
         return id;
     }
 
     private String makeVersion(int id) {
-        // base.getActiveEditor().getSketch().reload();
         editor.handleSave(true);
         File folder = new File(versionsCode.getAbsolutePath() + "/_" + id);
         folder.mkdir();
@@ -606,7 +591,6 @@ private void update() {
                     }finally{
                         renderLock.unlock();
                     }
-                    
                 }
             }
         }
@@ -631,12 +615,12 @@ private void update() {
 
         class checkpoint implements ActionListener {
             public void actionPerformed(ActionEvent evt) {
-                checkpoint(currentVersion);
-                System.out.println("saved!");
+                promptCheckpoint(currentVersion);
             }
         }
         final ActionListener CHECKPOINT = new checkpoint();
         editor.getTextArea().getInputHandler().addKeyBinding("C+S", CHECKPOINT);
+        editor.getTextArea().getInputHandler().addKeyBinding("M+S", CHECKPOINT);
 
 
         try {  
@@ -648,9 +632,9 @@ private void update() {
             archiver.setUseParentHandlers(false);
     
         } catch (SecurityException e) {  
-            e.printStackTrace();  
+            logger.info(e.getMessage()); 
         } catch (IOException e) {  
-            e.printStackTrace();  
+            logger.info(e.getMessage());
         }  
 
         versionsTree = new File(versionsCode.getAbsolutePath() + "/tree.json");
@@ -670,14 +654,15 @@ private void update() {
                     editor.getSketch().getCode(0).save();
                     File catAsset = new File(assetsFolder.toPath()+"/cat.png");
                     File quickposeFile = new File(versionsCode.toPath()+"/quickpose.tldr");
-                    FileUtils.copyFile(starterCatFile, catAsset);
-                    FileUtils.copyFile(startertldr, quickposeFile);
+                    Utils.copyFile(starterCatFile, catAsset);
+                    Utils.copyFile(startertldr, quickposeFile);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.info(e.getMessage());
                 }
                 editor.handleSave(true);
             }
             codeTree = new Tree(new Data(makeVersion(0)));
+            makeVersion(-1); //Backup first state to compare for checkpoints
             changeActiveVersion(0);
             writeJSONFromRoot();
         } else {
@@ -685,39 +670,60 @@ private void update() {
             readJSONToRoot();
         }
     }
+    private void promptCheckpoint(int id){
+        Boolean shouldCheckpoint = false;
+        editor.handleSave(true);
+        File folder = new File(versionsCode.getAbsolutePath() + "/_" + id);
+        folder.mkdir();
+        if(codeTree.getNode(id).data.checkpoints == 0){
+            File parentFolder;
+            if(!codeTree.getNode(id).isRoot()){
+                parentFolder = new File(versionsCode.getAbsolutePath() + "/_" + codeTree.getNode(id).parent.id);
+            }else{
+                parentFolder = new File(versionsCode.getAbsolutePath() + "/_" + -1);
+            }
+            if(!Utils.compareDirs(parentFolder,folder)){
+                shouldCheckpoint = true;
+            }
+        }else{
+            File prevCheckpointFolder = new File(folder.getAbsolutePath() + "/checkpoint" + (codeTree.getNode(id).data.checkpoints-1));
+            if(!Utils.compareDirs(folder, prevCheckpointFolder)){
+                shouldCheckpoint = true;
+            }
+        }
+        if(shouldCheckpoint){
+            checkpoint(id);
+        }  
+    }
 
     private void checkpoint(int id){
-                // base.getActiveEditor().getSketch().reload();
-                editor.handleSave(true);
-                File folder = new File(versionsCode.getAbsolutePath() + "/_" + id);
-                folder.mkdir();
-                FilenameFilter filter = (dir, name) -> name.endsWith(".pde");
-                File prevCheckpointFolder = new File(folder.getAbsolutePath() + "/checkpoint" + (codeTree.getNode(id).data.checkpoints-1));
-                if(!Utils.compareDirs(folder, prevCheckpointFolder)){
-                    File checkpointFolder = new File(folder.getAbsolutePath() + "/checkpoint" + codeTree.getNode(id).data.checkpoints);
-                    checkpointFolder.mkdir();
-                    codeTree.getNode(id).data.checkpoints++;
-                    File[] dirListing = folder.listFiles();
-                    if (dirListing != null) {
-                        for (File f : dirListing) {
-                            if (FilenameUtils.isExtension(f.getName(), "pde")) {
-                                File newFile = new File(checkpointFolder.getAbsolutePath() + "/" + f.getName());
-                                Utils.copyFile(f, newFile);
-                            }
-                            if (FilenameUtils.equals(f.getName(), "render.png") && FileUtils.sizeOf(f) > FileUtils.ONE_KB) {
-                                renderLock.lock();
-                                try{
-                                    File newFile = new File(checkpointFolder.getAbsolutePath() + "/" + f.getName());
-                                    Utils.copyFile(f, newFile);
-                                }finally{
-                                    renderLock.unlock();
-                                }
-                                
-                            }
-                        }
+        System.out.println("Quickpose: Created Checkpoint #"+codeTree.getNode(id).data.checkpoints+" of version:"+id);
+        editor.statusMessage("Quickpose: Created Checkpoint #"+codeTree.getNode(id).data.checkpoints+" of version:"+id,EditorStatus.NOTICE);
+        archiver.info("Quickpose: Created Checkpoint #"+codeTree.getNode(id).data.checkpoints+" of version:"+id);
+        File folder = new File(versionsCode.getAbsolutePath() + "/_" + id);
+        folder.mkdir();
+        File checkpointFolder = new File(folder.getAbsolutePath() + "/checkpoint" + codeTree.getNode(id).data.checkpoints);
+        checkpointFolder.mkdir();
+        codeTree.getNode(id).data.checkpoints++;
+        File[] dirListing = folder.listFiles();
+        if (dirListing != null) {
+            for (File f : dirListing) {
+                if (FilenameUtils.isExtension(f.getName(), "pde")) {
+                    File newFile = new File(checkpointFolder.getAbsolutePath() + "/" + f.getName());
+                    Utils.copyFile(f, newFile);
+                }
+                if (FilenameUtils.equals(f.getName(), "render.png") && FileUtils.sizeOf(f) > FileUtils.ONE_KB) {
+                    renderLock.lock();
+                    try{
+                        File newFile = new File(checkpointFolder.getAbsolutePath() + "/" + f.getName());
+                        Utils.copyFile(f, newFile);
+                    }finally{
+                        renderLock.unlock();
                     }
                 }
-                
+            }
+        }
+        writeJSONFromRoot();
     }
     private void writeJSONFromRoot() {
         if (versionsTree.exists()) {
@@ -743,7 +749,7 @@ private void update() {
             encoded = Files.readAllBytes(Paths.get(versionsTree.getAbsolutePath()));
             input = new String(encoded, "UTF-8");
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.info(e.getMessage());
         }
         try {
             JSONObject graph = new JSONObject(input);
@@ -765,9 +771,25 @@ private void update() {
                     if (importTree.idExists(source) && !importTree.idExists(target)) {
                         Node parent = importTree.getNode(source);
                         int childInd = JSONSearch(nodes, target);
-                        Data data = new Data(nodes.getJSONObject(childInd).getString("path"));
-                        data.setCaretPosition(nodes.getJSONObject(childInd).getInt("caretPosition"));
-                        Node child = parent.setChild(data, target);
+                        JSONObject node = nodes.getJSONObject(childInd);
+               
+                        Data data = new Data(node.getString("path"));
+                        Iterator<String> keys = node.keys();
+
+                        while(keys.hasNext()) {
+                            String key = keys.next();
+                            switch(key){
+                                case "caretPosition":{
+                                    data.setCaretPosition(node.getInt(key));
+                                    break;
+                                }
+                                case "checkpoints":{
+                                    data.checkpoints = node.getInt(key);
+                                    break;
+                                }
+                            }
+                        }
+                        parent.setChild(data, target);
                         logger.info("created child : " + target + " from parent : "+ source);
                     }
                 }
