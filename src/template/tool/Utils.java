@@ -35,6 +35,25 @@ public final class Utils {
 	}
 	public static void copyFile(File in, File out) 
     {
+        // File file = new File("/home/developer/test.iso");
+        // File oFile = new File("/home/developer/test2");
+
+        // long time1 = System.currentTimeMillis();
+        // FileInputStream is = new FileInputStream(file);
+        // FileOutputStream fos = new FileOutputStream(oFile);
+        // FileChannel f = is.getChannel();
+        // FileChannel f2 = fos.getChannel();
+
+        // ByteBuffer buf = ByteBuffer.allocateDirect(64 * 1024);
+        // long len = 0;
+        // while((len = f.read(buf)) != -1) {
+        //     buf.flip();
+        //     f2.write(buf);
+        //     buf.clear();
+        // }
+
+        // f2.close();
+        // f.close();
         try{
             if(in.exists() && !FileUtils.contentEquals(in, out)){
                 FileInputStream inStream = new FileInputStream(in);
