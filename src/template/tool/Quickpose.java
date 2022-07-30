@@ -28,11 +28,9 @@
 
 package template.tool;
 
-//import com.fasterxml.jackson.databind.*;
 import static spark.Spark.*;
 import com.fasterxml.jackson.jr.ob.JSON;
 
-import java.awt.Color;
 import java.io.File;
 import java.io.OutputStream;
 import java.io.IOException;
@@ -57,15 +55,13 @@ import net.lingala.zip4j.model.ZipParameters;
 import net.lingala.zip4j.model.enums.CompressionLevel;
 import net.lingala.zip4j.ZipFile;
 
-import javax.servlet.*;
+import javax.servlet.MultipartConfigElement;
 
 import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import ch.qos.logback.core.rolling.RollingFileAppender;
 
-import org.eclipse.jetty.websocket.api.*;
-
+import org.eclipse.jetty.websocket.api.Session;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -83,9 +79,10 @@ import processing.app.ui.EditorStatus;
 // import processing.core.*;
 // import processing.app.syntax.*;
 import spark.Spark;
-import java.awt.event.*;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import java.time.LocalDateTime;  
 
@@ -116,11 +113,11 @@ public class Quickpose implements Tool {
     private java.util.logging.Logger archiver = java.util.logging.Logger.getLogger("ArchiveLog"); 
 
 
-    FileHandler logFileHandler; 
+    FileHandler logFileHandler;
     
     Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     Queue<String> messages = new ConcurrentLinkedQueue<>();
-    ThumbnailWebSocket handler = new ThumbnailWebSocket(messages,sessions,logger,archiver);
+    ThumbnailWebSocket handler = new ThumbnailWebSocket(messages,sessions,archiver);
 
     Runnable updateLoop = new Runnable() {
         public void run() {

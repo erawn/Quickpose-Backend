@@ -1,25 +1,25 @@
 package template.tool;
-import org.eclipse.jetty.websocket.api.*;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.*;
-import java.io.*;
+import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Queue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 @WebSocket
 public class ThumbnailWebSocket {
 
     // Store sessions if you want to, for example, broadcast a message to all users
     private static Queue<Session> sessions;
-    private static org.slf4j.Logger logger;
     private static java.util.logging.Logger archiver;
     private static ScheduledExecutorService executor;
     private static Queue<String> messageQueue;
 
-    public ThumbnailWebSocket(Queue<String> msgQueue, Queue<Session> sessionQueue, org.slf4j.Logger log,java.util.logging.Logger archive){
+    public ThumbnailWebSocket(Queue<String> msgQueue, Queue<Session> sessionQueue, java.util.logging.Logger archive){
         sessions = sessionQueue;
         messageQueue = msgQueue;
-        logger = log;
         archiver = archive; 
         executor = Executors.newScheduledThreadPool(2);
     }
