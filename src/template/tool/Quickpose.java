@@ -585,7 +585,6 @@ private void update() {
         exportFolder = new File(versionsCode.toPath() + "/" + "exports");
         exportFolder.mkdir();
 
-
         class checkpoint implements ActionListener {
             public void actionPerformed(ActionEvent evt) {
                 promptCheckpoint(currentVersion);
