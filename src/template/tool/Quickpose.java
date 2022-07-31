@@ -80,7 +80,9 @@ import processing.app.ui.EditorStatus;
 // import processing.app.syntax.*;
 import spark.Spark;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowListener;
 import java.awt.event.ActionEvent;
+import java.awt.event.WindowEvent;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -162,6 +164,28 @@ public class Quickpose implements Tool {
                 executor.shutdownNow();
             }
             }));
+
+        base.getActiveEditor().addWindowListener(new WindowListener(){
+            public void windowClosed(WindowEvent e) {
+                try {
+                    archiver.info("Session Shutdown");
+                    stop();
+                    setup = false;
+                    executor.shutdown();
+                    if (executor.awaitTermination(100, TimeUnit.MILLISECONDS)) {
+                    executor.shutdownNow();
+                    }
+                } catch (InterruptedException err) {
+                    executor.shutdownNow();
+                }
+            }
+            public void windowClosing(WindowEvent e) {}
+            public void windowIconified(WindowEvent e) {}
+            public void windowDeiconified(WindowEvent e) {}
+            public void windowActivated(WindowEvent e) {}
+            public void windowDeactivated(WindowEvent e) {}
+            public void windowOpened(WindowEvent e) {}
+        });
     }
 
 private void update() {
@@ -276,21 +300,24 @@ private void update() {
             
         });
         get("/fork/:id", (request, response) -> {
-            int childID = 0;
-            //archiver.info("Fork ID:" + Integer.parseInt(request.params(":id")));
-            childID = fork(Integer.parseInt(request.params(":id")));
+            String param = request.queryParams("Autorun");
+            boolean autorun = (param.contentEquals("true")) ? true : false;
+     
+            int childID = fork(Integer.parseInt(request.params(":id")),autorun);
             if (childID > 0) {
                 archiver.info("Forked"+Integer.parseInt(request.params(":id")) + "to" + childID);
                 currentVersion = childID;
                 return codeTree.getJSONSave(currentVersion, sketchFolder.getName());
             }
             response.status(500);
-            
             return response;
         });
         get("/select/:id", (request, response) -> {
             archiver.info("Selected"+Integer.parseInt(request.params(":id"))+"| From:"+currentVersion);
-            currentVersion = changeActiveVersion(Integer.parseInt(request.params(":id")));
+            String param = request.queryParams("Autorun");
+            boolean autorun = (param.contentEquals("true")) ? true : false;
+            System.out.println(param + autorun);
+            currentVersion = changeActiveVersion(Integer.parseInt(request.params(":id")),autorun);
             return currentVersion;
         });
         post("/tldrfile", (request, response) -> {
@@ -495,15 +522,15 @@ private void update() {
         });
     }
 
-    private int fork(int id) {
+    private int fork(int id, boolean autorun) {
         if (codeTree.idExists(id)) {
             Node parent = codeTree.getNode(id);
             if (parent != null) {
-                changeActiveVersion(id);
+                changeActiveVersion(id,false);
                 Node child = parent.addChild(new Data(""));
                 child.data.path = makeVersion(child.id);
                 archiver.info("Fork Version:"+id+"|To:"+child.id);
-                changeActiveVersion(child.id);
+                changeActiveVersion(child.id, autorun);
                 writeJSONFromRoot();
                 return child.id;
             }
@@ -513,7 +540,7 @@ private void update() {
         return -1;
     }
 
-    private int changeActiveVersion(int id) {
+    private int changeActiveVersion(int id, boolean autorun) {
         makeVersion(currentVersion);
         promptCheckpoint(id);
         if (!codeTree.idExists(id)) {
@@ -566,7 +593,10 @@ private void update() {
         editor.getSketch().reload();
         editor.handleSave(true);
         //editor.getToolbar().addPropertyChangeListener(listener);
-        //editor.getToolbar().handleRun(0);
+        if(autorun){
+            editor.getToolbar().handleRun(0);
+        }
+ 
         return id;
     }
 
@@ -663,7 +693,7 @@ private void update() {
             }
             codeTree = new Tree(new Data(makeVersion(0)));
             makeVersion(-1); //Backup first state to compare for checkpoints
-            changeActiveVersion(0);
+            changeActiveVersion(0,false);
             writeJSONFromRoot();
         } else {
             //archiver.info("Retriving Existing Quickpose Session");
@@ -799,7 +829,7 @@ private void update() {
                 }
             }
             codeTree = importTree;
-            changeActiveVersion(graph.getInt("CurrentNode"));
+            changeActiveVersion(graph.getInt("CurrentNode"),false);
         } catch (Exception e) {
             archiver.info("Exception in Building Tree : " + e.toString());
         }

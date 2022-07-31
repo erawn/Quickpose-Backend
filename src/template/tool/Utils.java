@@ -60,22 +60,22 @@ public final class Utils {
                 FileOutputStream outStream = new FileOutputStream(out);
                 FileChannel inChannel = inStream.getChannel();
                 FileChannel outChannel = outStream.getChannel();
+       
                 try {
                     inChannel.transferTo(0, inChannel.size(),outChannel);
-                    out.setLastModified(in.lastModified());
+                    outChannel.force(true);
                 } 
                 catch (IOException e) {
                     archiver.info(e.getMessage());
                 }
                 finally {
-                    outStream.flush();
-                
-                    if (outStream != null) outStream.close();
-                    if (outChannel != null) outChannel.close();
-                    if (inStream != null) inStream.close();
+                    if (outStream != null) outStream.flush();
+                   
                     if (inChannel != null) inChannel.close();
-           
-               
+                    if (inStream != null) inStream.close();
+
+                    if (outChannel != null) outChannel.close();
+                    if (outStream != null) outStream.close();
                 }
             }
         }catch(IOException e){
