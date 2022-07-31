@@ -31,6 +31,7 @@ package template.tool;
 import static spark.Spark.*;
 import com.fasterxml.jackson.jr.ob.JSON;
 
+import java.awt.Color;
 import java.io.File;
 import java.io.OutputStream;
 import java.io.IOException;
@@ -93,53 +94,30 @@ import java.time.LocalDateTime;
 // be the same as the value defined for project.name in your build.properties
 public class Quickpose implements Tool {
     Base base;
-    volatile boolean setup = false;
+    public Editor editor;
+    private int serverPort = 8080;
+    ScheduledExecutorService executor = null;
     private File sketchFolder;
     private File assetsFolder;
     private File archiveFolder;
     private File exportFolder;
     private File versionsCode;
     private File versionsTree;
+
     public Tree codeTree;
     public int currentVersion;
-    public Editor editor;
-    ScheduledExecutorService windowExecutor;
-    JSONObject nodePositions;
-    private int serverPort = 8080;
-    ScheduledExecutorService executor = null;
+  
+    volatile boolean setup = false;
+
+    private org.slf4j.Logger logger = LoggerFactory.getLogger(Quickpose.class);
+    private java.util.logging.Logger archiver = java.util.logging.Logger.getLogger("ArchiveLog"); 
+    FileHandler logFileHandler;
+
     private Lock renderLock = new ReentrantLock();
     private Lock tldrLock = new ReentrantLock();
-   
-    private org.slf4j.Logger logger = LoggerFactory.getLogger(Quickpose.class);
-    
-    private java.util.logging.Logger archiver = java.util.logging.Logger.getLogger("ArchiveLog"); 
-
-
-    FileHandler logFileHandler;
-    
     Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     Queue<String> messages = new ConcurrentLinkedQueue<>();
     ThumbnailWebSocket handler = new ThumbnailWebSocket(messages,sessions,archiver);
-
-    Runnable updateLoop = new Runnable() {
-        public void run() {
-            update();
-        }
-    };
-
-    public String getMenuTitle() {
-        return "Quickpose";
-    }
-
-    public void init(Base base) {
-        // Store a reference to the Processing application itself
-        this.base = base;
-        
-        Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        root.setLevel(Level.ERROR);
-        Utils.init(logger,archiver);
-
-    }
 
     public void run() {
         //make new if on existing file 
@@ -151,33 +129,14 @@ public class Quickpose implements Tool {
         }
         executor = Executors.newScheduledThreadPool(1);
         executor.scheduleAtFixedRate(updateLoop, 0, 100, TimeUnit.MILLISECONDS);
-        
+
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                archiver.info("Session Shutdown");
-                stop();
-                executor.shutdown();
-                if (executor.awaitTermination(100, TimeUnit.MILLISECONDS)) {
-                executor.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                executor.shutdownNow();
-            }
+                resetState();
             }));
 
         base.getActiveEditor().addWindowListener(new WindowListener(){
             public void windowClosed(WindowEvent e) {
-                try {
-                    archiver.info("Session Shutdown");
-                    stop();
-                    setup = false;
-                    executor.shutdown();
-                    if (executor.awaitTermination(100, TimeUnit.MILLISECONDS)) {
-                    executor.shutdownNow();
-                    }
-                } catch (InterruptedException err) {
-                    executor.shutdownNow();
-                }
+                resetState();
             }
             public void windowClosing(WindowEvent e) {}
             public void windowIconified(WindowEvent e) {}
@@ -200,7 +159,6 @@ private void update() {
         setup = true;
     }else{
         try {
-        
             if(renderLock.tryLock(90, TimeUnit.MILLISECONDS)){
                 try{
                     BSONObject obj = new BasicBSONObject();
@@ -235,15 +193,12 @@ private void update() {
                         }
                     }
                     handler.broadcastData(ByteBuffer.wrap(BSON.encode(obj)));
-
                         
                     if (codeTree.getNode(currentVersion).children.size() != 0){
-                        //editor.statusNotice("Sketch is Read Only Because It Has Child Nodes");
                         editor.statusMessage("Sketch is Read Only Because It Has Child Nodes",EditorStatus.NOTICE);
                     }else if (editor.getStatusMessage()=="Sketch is Read Only Because It Has Child Nodes"){
                         editor.statusEmpty();
                     }
-
                     if(sessions.isEmpty()){
                         editor.statusMessage("Quickpose: Looking for Browser Session...",EditorStatus.WARNING);
                     }else if (editor.getStatusMessage()=="Quickpose: Looking for Browser Session..."){
@@ -290,19 +245,16 @@ private void update() {
             response.type("application/json");
             try{
                 String json = codeTree.getJSONSave(currentVersion, sketchFolder.getName());
-                //System.out.println(json);
                 return json;
             }catch(Error e){
                 archiver.info(e.getMessage());
             }
             response.status(500);
             return response;
-            
         });
         get("/fork/:id", (request, response) -> {
             String param = request.queryParams("Autorun");
             boolean autorun = (param.contentEquals("true")) ? true : false;
-     
             int childID = fork(Integer.parseInt(request.params(":id")),autorun);
             if (childID > 0) {
                 archiver.info("Forked"+Integer.parseInt(request.params(":id")) + "to" + childID);
@@ -316,7 +268,6 @@ private void update() {
             archiver.info("Selected"+Integer.parseInt(request.params(":id"))+"| From:"+currentVersion);
             String param = request.queryParams("Autorun");
             boolean autorun = (param.contentEquals("true")) ? true : false;
-            System.out.println(param + autorun);
             currentVersion = changeActiveVersion(Integer.parseInt(request.params(":id")),autorun);
             return currentVersion;
         });
@@ -350,13 +301,7 @@ private void update() {
             return "Success";
         });
         post("/log", (request, response) -> {
-            //System.out.println(request.body());
-            tldrLock.lock();
-            try{
-                archiver.info(request.body());
-            }finally{
-                tldrLock.unlock();
-            }
+            archiver.info(request.body());
             return "Success";
         });
         post("/tldrfile_backup", (request, response) -> {
@@ -545,7 +490,6 @@ private void update() {
         promptCheckpoint(id);
         if (!codeTree.idExists(id)) {
             archiver.info("Quickpose: Attempted to change active version to invalid Id"+id);
-            archiver.info("Quickpose: Attempted to change active version to invalid Id"+id);
             return -1;
         }
         File[] sketchListing = sketchFolder.listFiles();
@@ -582,14 +526,15 @@ private void update() {
         }
         if (codeTree.getNode(id).children.size() == 0){
             editor.getPdeTextArea().setEditable(true);
-            //editor.getTextArea().getPainter().setBackground(Color.WHITE);
+            editor.getTextArea().updateTheme();
             editor.statusEmpty();
         } else {
             editor.getPdeTextArea().setEditable(false);
-            editor.statusMessage("Sketch is Read Only Because It Has Child Nodes",EditorStatus.NOTICE);
-            //editor.getTextArea().getPainter().setBackground(Color.LIGHT_GRAY);
+            editor.statusMessage("Sketch is Read Only Because It Has Child Nodes",EditorStatus.WARNING);
+            editor.getTextArea().getPainter().setBackground(Color.LIGHT_GRAY);
         }
         editor.getTextArea().setCaretPosition(codeTree.getNode(id).data.caretPosition);
+        editor.getTextArea().blinkCaret();
         editor.getSketch().reload();
         editor.handleSave(true);
         //editor.getToolbar().addPropertyChangeListener(listener);
@@ -832,6 +777,54 @@ private void update() {
             changeActiveVersion(graph.getInt("CurrentNode"),false);
         } catch (Exception e) {
             archiver.info("Exception in Building Tree : " + e.toString());
+        }
+    }
+    Runnable updateLoop = new Runnable() {
+        public void run() {
+            update();
+        }
+    };
+
+    public String getMenuTitle() {
+        return "Quickpose";
+    }
+
+    public void init(Base base) {
+        // Store a reference to the Processing application itself
+        this.base = base;
+        
+        Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        root.setLevel(Level.ERROR);
+        Utils.init(logger,archiver);
+
+    }
+
+    private void resetState(){
+        try {
+            archiver.info("Session Shutdown");
+            executor.shutdown();
+            stop();
+            if (executor.awaitTermination(100, TimeUnit.MILLISECONDS)) {
+            executor.shutdownNow();
+            }
+            renderLock = new ReentrantLock();
+            tldrLock = new ReentrantLock();
+            sessions = new ConcurrentLinkedQueue<>();
+            messages = new ConcurrentLinkedQueue<>();
+            handler = new ThumbnailWebSocket(messages,sessions,archiver);
+            executor = null;
+            setup = false;
+            sketchFolder = null;
+            assetsFolder = null;
+            archiveFolder = null;
+            exportFolder = null;
+            versionsCode = null;
+            versionsTree = null;
+            codeTree = null;
+            currentVersion = 0;
+            editor = null;
+        } catch (InterruptedException err) {
+            executor.shutdownNow();
         }
     }
 
