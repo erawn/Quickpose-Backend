@@ -492,6 +492,9 @@ private void update() {
             archiver.info("Quickpose: Attempted to change active version to invalid Id"+id);
             return -1;
         }
+        if(autorun){
+            editor.getToolbar().handleStop();
+        }
         File[] sketchListing = sketchFolder.listFiles();
         if (sketchListing != null) {
             for (File f : sketchListing) {
