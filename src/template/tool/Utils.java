@@ -66,7 +66,7 @@ public final class Utils {
                     outChannel.force(true);
                 } 
                 catch (IOException e) {
-                    archiver.info(e.getMessage());
+                    //archiver.info(e.getMessage());
                 }
                 finally {
                     if (outStream != null) outStream.flush();
@@ -79,7 +79,7 @@ public final class Utils {
                 }
             }
         }catch(IOException e){
-            archiver.info(e.getMessage());
+            //archiver.info(e.getMessage());
         } 
     }
 //oldFolder is base folder (aka sketchFolder), new folder is the version folder

@@ -188,8 +188,10 @@ private void update() {
                         obj.put("image", bytes);
                         if(!shouldCheckpoint(currentVersion)){
                             File checkpointFolder = new File(currentVersionFolder.getAbsolutePath() + "/checkpoint" + (codeTree.getNode(currentVersion).data.checkpoints-1));
-                            File checkpointRender = new File(checkpointFolder.getAbsolutePath() +"/render.png");
-                            Utils.copyFile(render,checkpointRender);
+                            if(checkpointFolder.exists()){
+                                File checkpointRender = new File(checkpointFolder.getAbsolutePath() +"/render.png");
+                                Utils.copyFile(render,checkpointRender);
+                            }
                         }
                     }
                     handler.broadcastData(ByteBuffer.wrap(BSON.encode(obj)));
@@ -795,8 +797,8 @@ private void update() {
         // Store a reference to the Processing application itself
         this.base = base;
         
-        Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        root.setLevel(Level.ERROR);
+        // Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        // root.setLevel(Level.ERROR);
         Utils.init(logger,archiver);
 
     }
