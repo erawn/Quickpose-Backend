@@ -797,8 +797,8 @@ private void update() {
         // Store a reference to the Processing application itself
         this.base = base;
         
-        // Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        // root.setLevel(Level.ERROR);
+        Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        root.setLevel(Level.ERROR);
         Utils.init(logger,archiver);
 
     }
