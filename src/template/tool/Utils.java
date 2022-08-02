@@ -55,15 +55,20 @@ public final class Utils {
         // f2.close();
         // f.close();
         try{
-            if(in.exists() && !FileUtils.contentEquals(in, out)){
+            if(in.exists()){
                 FileInputStream inStream = new FileInputStream(in);
                 FileOutputStream outStream = new FileOutputStream(out);
                 FileChannel inChannel = inStream.getChannel();
                 FileChannel outChannel = outStream.getChannel();
        
                 try {
-                    inChannel.transferTo(0, inChannel.size(),outChannel);
+                    long bytesTransferred = 0;
+                    while(bytesTransferred < inChannel.size()){
+                        bytesTransferred += inChannel.transferTo(bytesTransferred, inChannel.size(), outChannel);
+                    }
+                    inChannel.force(true);
                     outChannel.force(true);
+   
                 } 
                 catch (IOException e) {
                     //archiver.info(e.getMessage());

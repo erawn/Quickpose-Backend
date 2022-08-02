@@ -607,6 +607,7 @@ private void update() {
             SimpleFormatter formatter = new SimpleFormatter();  
             logFileHandler.setFormatter(formatter);  
             archiver.setUseParentHandlers(false);
+            archiver.info("##tool.name## (v##tool.prettyVersion##) by ##author.name##");
             //) logger);
     
         } catch (SecurityException e) {  
@@ -641,7 +642,7 @@ private void update() {
                 editor.handleSave(true);
             }
             codeTree = new Tree(new Data(makeVersion(0)));
-            makeVersion(-1); //Backup first state to compare for checkpoints
+            checkpoint(0); //Backup first state to compare for checkpoints
             changeActiveVersion(0,false);
             writeJSONFromRoot();
         } else {
@@ -660,13 +661,8 @@ private void update() {
         editor.handleSave(true);
         File folder = new File(versionsCode.getAbsolutePath() + "/_" + id);
         folder.mkdir();
-        if(codeTree.getNode(id).data.checkpoints == 0){
-            File parentFolder;
-            if(!codeTree.getNode(id).isRoot()){
-                parentFolder = new File(versionsCode.getAbsolutePath() + "/_" + codeTree.getNode(id).parent.id);
-            }else{
-                parentFolder = new File(versionsCode.getAbsolutePath() + "/_" + -1);
-            }
+        if(codeTree.getNode(id).data.checkpoints == 0 && !codeTree.getNode(id).isRoot()){
+            File parentFolder = new File(versionsCode.getAbsolutePath() + "/_" + codeTree.getNode(id).parent.id);
             if(!Utils.compareDirs(parentFolder,folder)){
                 shouldCheckpoint = true;
             }
