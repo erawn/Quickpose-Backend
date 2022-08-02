@@ -801,6 +801,7 @@ private void update() {
 
     private void resetState(){
         try {
+        
             archiver.info("Session Shutdown");
             executor.shutdown();
             stop();
@@ -823,6 +824,7 @@ private void update() {
             codeTree = null;
             currentVersion = 0;
             editor = null;
+            base.rebuildToolList(); //when active session editor is closed, ensure that no state is left over
         } catch (InterruptedException err) {
             executor.shutdownNow();
         }
