@@ -284,6 +284,8 @@ private void update() {
                     // getPart needs to use same "name" as input field in form
                     try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
                         Files.copy(input, dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    }catch(IOException e){
+                        archiver.info(e.getMessage()); 
                     }
                     if(editor.getStatusMessage().contentEquals("Quickpose: old tldr file in browser, please reload browser window")){
                         editor.statusMessage("Quickpose: Browser Reloaded",EditorStatus.NOTICE);
@@ -295,6 +297,8 @@ private void update() {
                     // getPart needs to use same "name" as input field in form
                     try (InputStream input = request.raw().getPart("uploaded_file").getInputStream()) { 
                         Files.copy(input, f.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    }catch(IOException e){
+                        archiver.info(e.getMessage()); 
                     }
                 }
             } finally {
@@ -473,11 +477,20 @@ private void update() {
         if (codeTree.idExists(id)) {
             Node parent = codeTree.getNode(id);
             if (parent != null) {
-                changeActiveVersion(id,false);
+                try{
+                    changeActiveVersion(id,false);
+                }catch(NullPointerException e){
+                    archiver.info(e.getMessage());
+                }
+               
                 Node child = parent.addChild(new Data(""));
                 child.data.path = makeVersion(child.id);
                 archiver.info("Fork Version:"+id+"|To:"+child.id);
-                changeActiveVersion(child.id, autorun);
+                try{
+                    changeActiveVersion(child.id,autorun);
+                }catch(NullPointerException e){
+                    archiver.info(e.getMessage());
+                }
                 writeJSONFromRoot();
                 return child.id;
             }
@@ -494,8 +507,13 @@ private void update() {
             archiver.info("Quickpose: Attempted to change active version to invalid Id"+id);
             return -1;
         }
-        if(autorun){
-            editor.getToolbar().handleStop();
+        if(autorun && editor.getSketch().getCode(0) != null){
+            try{
+                editor.getToolbar().handleStop();
+            }catch(NullPointerException error ){
+                archiver.info(error.getMessage());
+            }
+         
         }
         File[] sketchListing = sketchFolder.listFiles();
         if (sketchListing != null) {
@@ -529,19 +547,27 @@ private void update() {
                 }
             }
         }
-        if (codeTree.getNode(id).children.size() == 0){
-            editor.getPdeTextArea().setEditable(true);
-            editor.getTextArea().updateTheme();
-            editor.statusEmpty();
-        } else {
-            editor.getPdeTextArea().setEditable(false);
-            editor.statusMessage("Sketch is Read Only Because It Has Child Nodes",EditorStatus.WARNING);
-            editor.getTextArea().getPainter().setBackground(Color.LIGHT_GRAY);
-        }
         editor.getTextArea().setCaretPosition(codeTree.getNode(id).data.caretPosition);
-        editor.getTextArea().blinkCaret();
+        //editor.getTextArea().blinkCaret();
         editor.getSketch().reload();
         editor.handleSave(true);
+        try{
+            if(editor.getSketch().getCode(0) != null){
+                if (codeTree.getNode(id).children.size() == 0){
+                    editor.getPdeTextArea().setEditable(true);
+                    editor.getTextArea().updateTheme();
+                    editor.statusEmpty();
+                } else {
+                    editor.getPdeTextArea().setEditable(false);
+                    editor.statusMessage("Sketch is Read Only Because It Has Child Nodes",EditorStatus.WARNING);
+                    editor.getTextArea().getPainter().setBackground(Color.LIGHT_GRAY);
+                }
+            }
+          
+        }catch(NullPointerException e){
+            archiver.info(e.getMessage());
+        }
+    
         //editor.getToolbar().addPropertyChangeListener(listener);
         if(autorun){
             editor.getToolbar().handleRun(0);
@@ -650,6 +676,7 @@ private void update() {
             archiver.info("Quickpose: Existing Quickpose Session Found! Loading...");
             readJSONToRoot();
         }
+        editor.getSketch().reload();
     }
     private void promptCheckpoint(int id){
         if(shouldCheckpoint(id)){
