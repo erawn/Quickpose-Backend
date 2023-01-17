@@ -1,22 +1,8 @@
 /**
- * you can put a one sentence description of your tool here.
+ * Quickpose - Version control for sketching in code.
  *
  * ##copyright##
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General
- * Public License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
- * Boston, MA  02111-1307  USA
  *
  * @author   ##author##
  * @modified ##date##
@@ -34,6 +20,8 @@ import com.fasterxml.jackson.jr.ob.JSON;
 import java.awt.Color;
 import java.io.File;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.FileHandler;
@@ -51,6 +39,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.awt.Desktop;
 
 import net.lingala.zip4j.model.ZipParameters;
 import net.lingala.zip4j.model.enums.CompressionLevel;
@@ -90,8 +79,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.time.LocalDateTime;  
 
 
-// when creating a tool, the name of the main class which implements Tool must
-// be the same as the value defined for project.name in your build.properties
 public class Quickpose implements Tool {
     Base base;
     public Editor editor;
@@ -157,6 +144,16 @@ private void update() {
         networkSetup();
         Spark.init();
         setup = true;
+        if(Desktop.isDesktopSupported()){
+            Desktop desk = Desktop.getDesktop();
+            try {
+                desk.browse(new URI("https://quickpose.ericrawn.media"));
+            } catch (IOException e) {
+                archiver.info(e.getMessage());
+            } catch (URISyntaxException e) {
+                archiver.info(e.getMessage());
+            }
+        }
     }else{
         try {
             if(renderLock.tryLock(90, TimeUnit.MILLISECONDS)){
