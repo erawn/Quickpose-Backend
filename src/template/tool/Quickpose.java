@@ -642,7 +642,7 @@ private void update() {
         versionsTree = new File(versionsCode.getAbsolutePath() + "/tree.json");
         if (!versionsTree.exists()) {
             File starterCodeFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/QuickposeDefault.pde");
-            File starterCatFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/cat.png");
+            File starterBannerFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/quickpose-banner.png");
             File startertldr = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/examples/quickpose.tldr");
             archiver.info("Quickpose: No Existing Quickpose Session Detected - creating a new verison history");
             //archiver.info("Creating New Quickpose Session");
@@ -655,9 +655,9 @@ private void update() {
                     textarea.setText(Utils.readFile(starterCodeFile)+"\n"+textarea.getText());
                     editor.getSketch().save();
                     editor.getSketch().getCode(0).save();
-                    File catAsset = new File(assetsFolder.toPath()+"/cat.png");
+                    File bannerAsset = new File(assetsFolder.toPath()+"/quickpose-banner.png");
                     File quickposeFile = new File(versionsCode.toPath()+"/quickpose.tldr");
-                    Utils.copyFile(starterCatFile, catAsset);
+                    Utils.copyFile(starterBannerFile, bannerAsset);
                     Utils.copyFile(startertldr, quickposeFile);
                 } catch (IOException e) {
                     archiver.info(e.getMessage());
