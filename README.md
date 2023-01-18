@@ -1,11 +1,3 @@
-## Version Control for Artists
+## Quickpose
 
-This is a plugin for Processing, allowing you to integrate an easy to use version control system directly into your editor. 
-
-Instructions: 
-
-Download here: into your Documents/Processing/tools/ Folder. The complete path should look like this :
-
-/Documents/Processing/tools/VCFA
-
-Next, go to Tools-> Version Control for Artists on a Blank Sketch.
+This is the Processing backend for [Quickpose](https://github.com/erawn/Quickpose). Go to the [Project Homepage](https://www.ericrawn.media/quickpose) to learn more! 
