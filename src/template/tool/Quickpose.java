@@ -91,6 +91,8 @@ public class Quickpose implements Tool {
     private File versionsCode;
     private File versionsTree;
 
+    private String usageDataID = "disabled";
+
     public Tree codeTree;
     public int currentVersion;
   
@@ -98,13 +100,15 @@ public class Quickpose implements Tool {
 
     private org.slf4j.Logger logger = LoggerFactory.getLogger(Quickpose.class);
     private java.util.logging.Logger archiver = java.util.logging.Logger.getLogger("ArchiveLog"); 
+    private java.util.logging.Logger usageData = java.util.logging.Logger.getLogger("usageData"); 
     FileHandler logFileHandler;
+    FileHandler usageDataFileHandler;
 
     private Lock renderLock = new ReentrantLock();
     private Lock tldrLock = new ReentrantLock();
     Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     Queue<String> messages = new ConcurrentLinkedQueue<>();
-    ThumbnailWebSocket handler = new ThumbnailWebSocket(messages,sessions,archiver);
+    ThumbnailWebSocket handler = new ThumbnailWebSocket(messages,sessions,archiver, usageData);
 
     public void run() {
         //make new if on existing file 
@@ -167,7 +171,7 @@ private void update() {
                             File f = new File(versionsCode.toPath() + "/quickpose.tldr");
                             byte[] bytes = FileUtils.readFileToByteArray(f);
                             obj.put("tldrfile", bytes);
-                            obj.put("versions",codeTree.getJSONSave(currentVersion, sketchFolder.getName()).getBytes());
+                            obj.put("versions",codeTree.getJSONSave(currentVersion, sketchFolder.getName(), usageDataID).getBytes());
                         }
                         msg = messages.poll();
                     }
@@ -243,7 +247,7 @@ private void update() {
         get("/versions.json", (request, response) -> {
             response.type("application/json");
             try{
-                String json = codeTree.getJSONSave(currentVersion, sketchFolder.getName());
+                String json = codeTree.getJSONSave(currentVersion, sketchFolder.getName(), usageDataID);
                 return json;
             }catch(Error e){
                 archiver.info(e.getMessage());
@@ -256,15 +260,17 @@ private void update() {
             boolean autorun = (param.contentEquals("true")) ? true : false;
             int childID = fork(Integer.parseInt(request.params(":id")),autorun);
             if (childID > 0) {
-                archiver.info("Forked"+Integer.parseInt(request.params(":id")) + "to" + childID);
+                archiver.info("Forked:"+Integer.parseInt(request.params(":id")) + "| From:" + childID);
+                usageData.info("Forked:"+Integer.parseInt(request.params(":id")) + "| From:" + childID);
                 currentVersion = childID;
-                return codeTree.getJSONSave(currentVersion, sketchFolder.getName());
+                return codeTree.getJSONSave(currentVersion, sketchFolder.getName(), usageDataID);
             }
             response.status(500);
             return response;
         });
         get("/select/:id", (request, response) -> {
-            archiver.info("Selected"+Integer.parseInt(request.params(":id"))+"| From:"+currentVersion);
+            archiver.info("Selected:"+Integer.parseInt(request.params(":id"))+"| From:"+currentVersion);
+            usageData.info("Selected:"+Integer.parseInt(request.params(":id"))+"| From:"+currentVersion);
             String param = request.queryParams("Autorun");
             boolean autorun = (param.contentEquals("true")) ? true : false;
             currentVersion = changeActiveVersion(Integer.parseInt(request.params(":id")),autorun);
@@ -305,6 +311,10 @@ private void update() {
         });
         post("/log", (request, response) -> {
             archiver.info(request.body());
+            return "Success";
+        });
+        post("/analytics", (request, response) -> {
+            usageData.info(request.body());
             return "Success";
         });
         post("/tldrfile_backup", (request, response) -> {
@@ -380,6 +390,7 @@ private void update() {
                 File export = new File(exportFolder.toPath()+"/"+color+"_export_"+LocalDateTime.now().toString().replace(':', '-'));
                 export.mkdir();
                 archiver.info("Export ids:"+ids+"|by color:"+color);
+                usageData.info("Export ids:"+ids+"|by color:"+color);
                 for(Integer i : versions){
                     File versionFolder = new File(versionsCode.getAbsolutePath() + "/_" + i);
                     if(versionFolder.exists()){
@@ -549,7 +560,7 @@ private void update() {
         editor.getSketch().reload();
         editor.handleSave(true);
         try{
-            if(editor.getSketch().getCode(0) != null){
+            if(editor.getSketch().getCode() != null){
                 if (codeTree.getNode(id).children.size() == 0){
                     editor.getPdeTextArea().setEditable(true);
                     editor.getTextArea().updateTheme();
@@ -631,7 +642,12 @@ private void update() {
             logFileHandler.setFormatter(formatter);  
             archiver.setUseParentHandlers(false);
             archiver.info("##tool.name## (v##tool.prettyVersion##) by ##author.name##");
-            //) logger);
+
+            usageDataFileHandler = new FileHandler(archiveFolder.getPath()+"/usageData_%g.log",FileUtils.ONE_MB * 50, 10000, true);  
+            usageData.addHandler(usageDataFileHandler);
+            usageDataFileHandler.setFormatter(formatter);  
+            usageData.setUseParentHandlers(false);
+            usageData.info("Logger Initialized");
     
         } catch (SecurityException e) {  
             archiver.info(e.getMessage()); 
@@ -738,7 +754,7 @@ private void update() {
             archiver.info("Exception Occured in writeJSONFromRoot: " + e.toString());
         }
         try {
-            JSON.std.write(JSON.std.anyFrom(codeTree.getJSONSave(currentVersion,sketchFolder.getName())), versionsTree.getAbsoluteFile());
+            JSON.std.write(JSON.std.anyFrom(codeTree.getJSONSave(currentVersion,sketchFolder.getName(),usageDataID)), versionsTree.getAbsoluteFile());
         } catch (IOException e) {
             archiver.info("Error Saving JSON to File");
         }
@@ -758,7 +774,7 @@ private void update() {
             JSONObject graph = new JSONObject(input);
             JSONArray nodes = graph.getJSONArray("Nodes");
             JSONArray edges = graph.getJSONArray("Edges");
-
+            usageDataID = graph.getString("AnalyticsID");
             int rootInd = JSONSearch(nodes, 0);
             if (rootInd == -1) {
                 archiver.info("Couldn't Find Root Node on Import");
@@ -836,7 +852,7 @@ private void update() {
             tldrLock = new ReentrantLock();
             sessions = new ConcurrentLinkedQueue<>();
             messages = new ConcurrentLinkedQueue<>();
-            handler = new ThumbnailWebSocket(messages,sessions,archiver);
+            handler = new ThumbnailWebSocket(messages,sessions,archiver, usageData);
             executor = null;
             setup = false;
             sketchFolder = null;
