@@ -19,6 +19,7 @@ import com.fasterxml.jackson.jr.ob.JSON;
 
 import java.awt.Color;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -90,8 +91,6 @@ public class Quickpose implements Tool {
     private File exportFolder;
     private File versionsCode;
     private File versionsTree;
-
-    private String usageDataID = "disabled";
 
     public Tree codeTree;
     public int currentVersion;
@@ -171,7 +170,7 @@ private void update() {
                             File f = new File(versionsCode.toPath() + "/quickpose.tldr");
                             byte[] bytes = FileUtils.readFileToByteArray(f);
                             obj.put("tldrfile", bytes);
-                            obj.put("versions",codeTree.getJSONSave(currentVersion, sketchFolder.getName(), usageDataID).getBytes());
+                            obj.put("versions",codeTree.getJSONSave(currentVersion, sketchFolder.getName()).getBytes());
                         }
                         msg = messages.poll();
                     }
@@ -247,7 +246,7 @@ private void update() {
         get("/versions.json", (request, response) -> {
             response.type("application/json");
             try{
-                String json = codeTree.getJSONSave(currentVersion, sketchFolder.getName(), usageDataID);
+                String json = codeTree.getJSONSave(currentVersion, sketchFolder.getName());
                 return json;
             }catch(Error e){
                 archiver.info(e.getMessage());
@@ -263,7 +262,7 @@ private void update() {
                 archiver.info("Forked:"+Integer.parseInt(request.params(":id")) + "| From:" + childID);
                 usageData.info("Forked:"+Integer.parseInt(request.params(":id")) + "| From:" + childID);
                 currentVersion = childID;
-                return codeTree.getJSONSave(currentVersion, sketchFolder.getName(), usageDataID);
+                return codeTree.getJSONSave(currentVersion, sketchFolder.getName());
             }
             response.status(500);
             return response;
@@ -313,8 +312,71 @@ private void update() {
             archiver.info(request.body());
             return "Success";
         });
-        post("/analytics", (request, response) -> {
-            usageData.info(request.body());
+        get("/usageData", (request, response) -> {
+            File usageData = new File(archiveFolder.getPath()+"/usageData.log");  
+            try (OutputStream out = response.raw().getOutputStream()) {
+                response.header("Content-Disposition", "filename=usageData.txt");
+                Files.copy(usageData.toPath(), out);
+                out.flush();
+                response.status(200);
+            }
+            return response;
+        });
+        get("/usageID", (request, response) -> {
+            File settingsFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/settings.json");
+            if(!settingsFile.exists()){
+                settingsFile.createNewFile();
+                return "new";
+            }
+            byte[] encoded = Files.readAllBytes(settingsFile.toPath());
+            String input = new String(encoded, "UTF-8");
+            JSONObject graph = new JSONObject(input);
+            String consent = graph.getString("Consent");
+            if(consent.equals("prompt") || consent.equals("EnabledNoPrompt")){
+                return graph.getString("analyticsID");
+            }else{
+                return "Disabled";
+            }
+        });
+
+        get("/usageConsent", (request, response) -> {
+            File settingsFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/settings.json");
+            if(!settingsFile.exists()){
+                settingsFile.createNewFile();
+                return "prompt";
+            }
+            byte[] encoded = Files.readAllBytes(settingsFile.toPath());
+            String input = new String(encoded, "UTF-8");
+            JSONObject graph = new JSONObject(input);
+            String consent = graph.getString("Consent");
+            return consent;
+
+        });
+
+        post("/usageID", (request, response) -> {
+            File settingsFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/settings.json");
+            if(!settingsFile.exists()){
+                settingsFile.createNewFile();
+            }
+            byte[] encoded = Files.readAllBytes(settingsFile.toPath());
+            String input = new String(encoded, "UTF-8");
+            JSONObject settings = new JSONObject(input);
+            settings.remove("usageID");
+            settings.put("usageID", request.queryParams("usageID"));
+            JSON.std.write(settings, settingsFile);
+            return "Success";
+        });
+        post("/usageConsent", (request, response) -> {
+            File settingsFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/settings.json");
+            if(!settingsFile.exists()){
+                settingsFile.createNewFile();
+            }
+            byte[] encoded = Files.readAllBytes(settingsFile.toPath());
+            String input = new String(encoded, "UTF-8");
+            JSONObject settings = new JSONObject(input);
+            settings.remove("Consent");
+            settings.put("Consent", request.queryParams("Consent"));
+            JSON.std.write(settings, settingsFile);
             return "Success";
         });
         post("/tldrfile_backup", (request, response) -> {
@@ -643,7 +705,7 @@ private void update() {
             archiver.setUseParentHandlers(false);
             archiver.info("##tool.name## (v##tool.prettyVersion##) by ##author.name##");
 
-            usageDataFileHandler = new FileHandler(archiveFolder.getPath()+"/usageData_%g.log",FileUtils.ONE_MB * 50, 10000, true);  
+            usageDataFileHandler = new FileHandler(archiveFolder.getPath()+"/usageData.log",true);  
             usageData.addHandler(usageDataFileHandler);
             usageDataFileHandler.setFormatter(formatter);  
             usageData.setUseParentHandlers(false);
@@ -754,7 +816,7 @@ private void update() {
             archiver.info("Exception Occured in writeJSONFromRoot: " + e.toString());
         }
         try {
-            JSON.std.write(JSON.std.anyFrom(codeTree.getJSONSave(currentVersion,sketchFolder.getName(),usageDataID)), versionsTree.getAbsoluteFile());
+            JSON.std.write(JSON.std.anyFrom(codeTree.getJSONSave(currentVersion,sketchFolder.getName())), versionsTree.getAbsoluteFile());
         } catch (IOException e) {
             archiver.info("Error Saving JSON to File");
         }
@@ -774,7 +836,6 @@ private void update() {
             JSONObject graph = new JSONObject(input);
             JSONArray nodes = graph.getJSONArray("Nodes");
             JSONArray edges = graph.getJSONArray("Edges");
-            usageDataID = graph.getString("AnalyticsID");
             int rootInd = JSONSearch(nodes, 0);
             if (rootInd == -1) {
                 archiver.info("Couldn't Find Root Node on Import");

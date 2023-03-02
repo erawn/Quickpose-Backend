@@ -62,7 +62,7 @@ public class Tree {
 		return all;
 	}
 
-	public String getJSONSave(int currentNodeId, String projectName, String usageDataID) {
+	public String getJSONSave(int currentNodeId, String projectName) {
 		try {
 			JSONObject Graph = new JSONObject();
 			JSONArray Nodes = new JSONArray();
@@ -103,7 +103,6 @@ public class Tree {
 			Graph.put("Edges", Edges);
 			Graph.put("CurrentNode", currentNodeId);
 			Graph.put("ProjectName", projectName);
-			Graph.put("AnalyticsID", usageDataID);
 			return Graph.toString();
 		} catch (Error e) {
 			Utils.getLogger().error(e.getMessage());
