@@ -312,6 +312,10 @@ private void update() {
             archiver.info(request.body());
             return "Success";
         });
+        post("/usageData", (request, response) -> {
+            usageData.info(request.body());
+            return "Success";
+        });
         get("/usageData", (request, response) -> {
             File usageData = new File(archiveFolder.getPath()+"/usageData.log");  
             try (OutputStream out = response.raw().getOutputStream()) {
@@ -343,12 +347,22 @@ private void update() {
             File settingsFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/settings.json");
             if(!settingsFile.exists()){
                 settingsFile.createNewFile();
-                return "prompt";
+                return "PromptNoID";
             }
             byte[] encoded = Files.readAllBytes(settingsFile.toPath());
             String input = new String(encoded, "UTF-8");
             JSONObject graph = new JSONObject(input);
             String consent = graph.getString("Consent");
+            String remind = graph.getString("Remind");
+            if(consent.equals("Enabled") && remind.equals("False")){
+                return "EnabledNoPrompt";
+            } else if(consent.equals("Enabled") && remind.equals("True")){
+                return "Prompt";
+            } else if(consent.equals("Disabled") && remind.equals("False")){
+                return "DisabledNoPrompt";
+            } else if (consent.equals("Disabled") && remind.equals("False")){
+                return "Prompt";
+            }
             return consent;
 
         });
@@ -376,6 +390,8 @@ private void update() {
             JSONObject settings = new JSONObject(input);
             settings.remove("Consent");
             settings.put("Consent", request.queryParams("Consent"));
+            settings.remove("Remind");
+            settings.put("Remind", request.queryParams("Remind"));
             JSON.std.write(settings, settingsFile);
             return "Success";
         });
