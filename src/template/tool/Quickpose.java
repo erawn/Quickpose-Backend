@@ -19,7 +19,6 @@ import com.fasterxml.jackson.jr.ob.JSON;
 
 import java.awt.Color;
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -41,7 +40,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.awt.Desktop;
-
 import net.lingala.zip4j.model.ZipParameters;
 import net.lingala.zip4j.model.enums.CompressionLevel;
 import net.lingala.zip4j.ZipFile;
@@ -91,7 +89,7 @@ public class Quickpose implements Tool {
     private File exportFolder;
     private File versionsCode;
     private File versionsTree;
-
+    private File settingsFile;
     public Tree codeTree;
     public int currentVersion;
   
@@ -103,6 +101,9 @@ public class Quickpose implements Tool {
     FileHandler logFileHandler;
     FileHandler usageDataFileHandler;
 
+    private volatile String userID = "";
+    private volatile String consent = "";
+    private volatile String remind = "";
     private Lock renderLock = new ReentrantLock();
     private Lock tldrLock = new ReentrantLock();
     Queue<Session> sessions = new ConcurrentLinkedQueue<>();
@@ -193,6 +194,14 @@ private void update() {
                                 Utils.copyFile(render,checkpointRender);
                             }
                         }
+                    }
+                    obj.put("userID",userID);
+                    if(consent.equals("Enabled") && remind.equals("False")){
+                        obj.put("Consent","EnabledNoPrompt");
+                    } else if(consent.equals("Disabled") && remind.equals("False")){
+                        obj.put("Consent","DisabledNoPrompt");
+                    } else {
+                        obj.put("Consent","Prompt");
                     }
                     handler.broadcastData(ByteBuffer.wrap(BSON.encode(obj)));
                         
@@ -327,72 +336,29 @@ private void update() {
             return response;
         });
         get("/usageID", (request, response) -> {
-            File settingsFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/settings.json");
-            if(!settingsFile.exists()){
-                settingsFile.createNewFile();
-                return "new";
-            }
-            byte[] encoded = Files.readAllBytes(settingsFile.toPath());
-            String input = new String(encoded, "UTF-8");
-            JSONObject graph = new JSONObject(input);
-            String consent = graph.getString("Consent");
-            if(consent.equals("prompt") || consent.equals("EnabledNoPrompt")){
-                return graph.getString("analyticsID");
-            }else{
-                return "Disabled";
-            }
+            return getSettings().getString("usageID");
         });
 
         get("/usageConsent", (request, response) -> {
-            File settingsFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/settings.json");
-            if(!settingsFile.exists()){
-                settingsFile.createNewFile();
-                return "PromptNoID";
-            }
-            byte[] encoded = Files.readAllBytes(settingsFile.toPath());
-            String input = new String(encoded, "UTF-8");
-            JSONObject graph = new JSONObject(input);
-            String consent = graph.getString("Consent");
-            String remind = graph.getString("Remind");
+            JSONObject settings = getSettings();
+            String consent = settings.getString("Consent");
+            String remind = settings.getString("Remind");
             if(consent.equals("Enabled") && remind.equals("False")){
                 return "EnabledNoPrompt";
-            } else if(consent.equals("Enabled") && remind.equals("True")){
-                return "Prompt";
             } else if(consent.equals("Disabled") && remind.equals("False")){
                 return "DisabledNoPrompt";
-            } else if (consent.equals("Disabled") && remind.equals("False")){
+            } else {
                 return "Prompt";
             }
-            return consent;
-
         });
 
-        post("/usageID", (request, response) -> {
-            File settingsFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/settings.json");
-            if(!settingsFile.exists()){
-                settingsFile.createNewFile();
-            }
-            byte[] encoded = Files.readAllBytes(settingsFile.toPath());
-            String input = new String(encoded, "UTF-8");
-            JSONObject settings = new JSONObject(input);
-            settings.remove("usageID");
-            settings.put("usageID", request.queryParams("usageID"));
-            JSON.std.write(settings, settingsFile);
-            return "Success";
-        });
         post("/usageConsent", (request, response) -> {
-            File settingsFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/settings.json");
-            if(!settingsFile.exists()){
-                settingsFile.createNewFile();
-            }
-            byte[] encoded = Files.readAllBytes(settingsFile.toPath());
-            String input = new String(encoded, "UTF-8");
-            JSONObject settings = new JSONObject(input);
+            JSONObject settings = getSettings();
             settings.remove("Consent");
             settings.put("Consent", request.queryParams("Consent"));
             settings.remove("Remind");
             settings.put("Remind", request.queryParams("Remind"));
-            JSON.std.write(settings, settingsFile);
+            setSettings(settings);
             return "Success";
         });
         post("/tldrfile_backup", (request, response) -> {
@@ -689,6 +655,36 @@ private void update() {
         return relPath;
     }
 
+    private JSONObject getSettings() {
+        if(settingsFile.exists()){
+            String input = Utils.readFile(settingsFile);
+            System.out.println(input);
+            JSONObject graph = new JSONObject(input);
+            return graph;
+        }else{
+            return new JSONObject();
+        }
+    }
+    private void setSettings(JSONObject settings) {
+        System.out.println("setsettings");
+        System.out.println(settings.toString());
+        JSONObject originalSettings = getSettings();
+        System.out.println(originalSettings.toString());
+
+        try {
+            for(String key: settings.toMap().keySet()){
+                originalSettings.put(key,settings.get(key));
+                System.out.println(key);
+                System.out.println(settings.get(key));
+            }
+            System.out.println(originalSettings);
+            JSON.std.write(JSON.std.anyFrom(originalSettings.toString()), settingsFile.getAbsoluteFile());
+            //Files.writeString(Paths.get(settingsFile.toURI()),originalSettings.toString());
+        } catch (IOException e) {
+            archiver.info(e.getMessage()); 
+        }
+    }
+
     private void dataSetup() {
         editor = base.getActiveEditor();
         sketchFolder = editor.getSketch().getFolder();
@@ -701,6 +697,7 @@ private void update() {
         archiveFolder.mkdir();
         exportFolder = new File(versionsCode.toPath() + "/" + "exports");
         exportFolder.mkdir();
+        settingsFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/settings.json");
 
         class checkpoint implements ActionListener {
             public void actionPerformed(ActionEvent evt) {
@@ -762,12 +759,46 @@ private void update() {
             checkpoint(0); //Backup first state to compare for checkpoints
             changeActiveVersion(0,false);
             writeJSONFromRoot();
+            //editor.getSketch().reload();
+            
+            if(!settingsFile.exists()){
+                System.out.println("No Settings File Found, making new one");
+                try {
+                    settingsFile.createNewFile();
+                } catch (IOException e) {
+                    archiver.info(e.getMessage());
+                    
+                }
+                JSONObject settings = new JSONObject();
+                String newrandomuuid = Utils.unique();
+                System.out.println(newrandomuuid);
+                settings.put("usageID", newrandomuuid);
+        
+                userID = newrandomuuid;
+                System.out.println(settings.toString());
+                try {
+                    JSON.std.write(JSON.std.anyFrom(settings.toString()), settingsFile.getAbsoluteFile());
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }else{
+                JSONObject settings = getSettings();
+                userID = settings.getString("usageID");
+                consent = settings.getString("Consent");
+                remind = settings.getString("Remind");
+                System.out.println("Found settings file");
+                System.out.println(userID);
+                System.out.println(consent);
+                System.out.println(remind);
+            }
         } else {
             //archiver.info("Retriving Existing Quickpose Session");
             archiver.info("Quickpose: Existing Quickpose Session Found! Loading...");
             readJSONToRoot();
+            editor.getSketch().reload();
         }
-        editor.getSketch().reload();
+        
     }
     private void promptCheckpoint(int id){
         if(shouldCheckpoint(id)){
