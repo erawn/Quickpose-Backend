@@ -58,6 +58,7 @@ import org.bson.BSON;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import processing.app.Base;
@@ -340,16 +341,22 @@ private void update() {
         });
 
         get("/usageConsent", (request, response) -> {
-            JSONObject settings = getSettings();
-            String consent = settings.getString("Consent");
-            String remind = settings.getString("Remind");
-            if(consent.equals("Enabled") && remind.equals("False")){
-                return "EnabledNoPrompt";
-            } else if(consent.equals("Disabled") && remind.equals("False")){
-                return "DisabledNoPrompt";
-            } else {
-                return "Prompt";
+            try{
+                JSONObject settings = getSettings();
+                String consent = settings.getString("Consent");
+                String remind = settings.getString("Remind");
+                if(consent.equals("Enabled") && remind.equals("False")){
+                    return "EnabledNoPrompt";
+                } else if(consent.equals("Disabled") && remind.equals("False")){
+                    return "DisabledNoPrompt";
+                } else {
+                    return "Prompt";
+                }
+            }catch(JSONException e){
+                archiver.info(e.getMessage()); 
             }
+            return "Prompt";
+    
         });
 
         post("/usageConsent", (request, response) -> {
@@ -779,8 +786,8 @@ private void update() {
                 try {
                     JSON.std.write(JSON.std.anyFrom(settings.toString()), settingsFile.getAbsoluteFile());
                 } catch (IOException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
+
+                    archiver.info(e.getMessage());
                 }
             }else{
                 JSONObject settings = getSettings();
