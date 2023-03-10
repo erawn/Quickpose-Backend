@@ -49,6 +49,8 @@ import javax.servlet.MultipartConfigElement;
 import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import gumtree.spoon.AstComparator;
+import gumtree.spoon.diff.Diff;
 
 import org.eclipse.jetty.websocket.api.Session;
 
@@ -69,6 +71,7 @@ import processing.app.ui.EditorStatus;
 // import processing.core.*;
 // import processing.app.syntax.*;
 import spark.Spark;
+
 import java.awt.event.ActionListener;
 import java.awt.event.WindowListener;
 import java.awt.event.ActionEvent;
@@ -97,7 +100,7 @@ public class Quickpose implements Tool {
     volatile boolean setup = false;
 
     private org.slf4j.Logger logger = LoggerFactory.getLogger(Quickpose.class);
-    private java.util.logging.Logger archiver = java.util.logging.Logger.getLogger("ArchiveLog"); 
+    private static java.util.logging.Logger archiver = java.util.logging.Logger.getLogger("ArchiveLog"); 
     private java.util.logging.Logger usageData = java.util.logging.Logger.getLogger("usageData"); 
     FileHandler logFileHandler;
     FileHandler usageDataFileHandler;
@@ -534,6 +537,7 @@ private void update() {
 
     private int fork(int id, boolean autorun) {
         if (codeTree.idExists(id)) {
+            compareTree(codeTree);
             Node parent = codeTree.getNode(id);
             if (parent != null) {
                 try{
@@ -634,6 +638,7 @@ private void update() {
  
         return id;
     }
+    
 
     private String makeVersion(int id) {
         editor.handleSave(true);
@@ -996,6 +1001,51 @@ private void update() {
 
         }
         return -1;
+    }
+    public File getFolder(int id){
+		return new File(versionsCode.getAbsolutePath() + "/_" + id);
+	}
+    public File getMainFile(int id){
+        File folder = getFolder(id);
+        File[] files = folder.listFiles();
+        for (File f : files){
+            if(f.getName().startsWith(sketchFolder.getName())){
+                System.out.println(f.getName());
+                return f;
+            }
+        }
+        return null;
+    }
+    public void compareTree(Tree tree){
+        List<Node> nodes = tree.getList();
+        for(Node n1 : nodes){
+            for(Node n2 : nodes){
+                if(n1.id != n2.id){
+                    System.out.println(n1.id);
+                    System.out.println(n2.id);
+                    compareAst(getMainFile(n1.id),getMainFile(n2.id));
+                }
+
+            }
+        }
+    }
+
+    public static void compareAst(File f1, File f2){
+        AstComparator diff = new AstComparator(); 
+        // Launcher l1 = new Launcher();
+        // l1.addInputResource(f1.getAbsolutePath());
+        // l1.buildModel();
+        // Launcher l2 = new Launcher();
+        // l2.addInputResource(f2.getAbsolutePath());
+        // l2.buildModel();
+
+        try {
+            Diff editScript = diff.compare(f1,f2);
+            archiver.info(editScript.toString());
+            System.out.println(editScript.toString());
+        } catch (Exception e) {
+            archiver.info(e.getMessage());
+        }
     }
 
 

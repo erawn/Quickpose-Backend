@@ -13,7 +13,9 @@ public class Tree {
 	}
 
 	public List<Node> getList() {
-		return root.allChildren;
+		List<Node> children = root.allChildren;
+		children.add(root);
+		return children;
 	}
 
 	public Node getNode(int id) {
