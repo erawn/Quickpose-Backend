@@ -665,7 +665,7 @@ private void update() {
     private JSONObject getSettings() {
         if(settingsFile.exists()){
             String input = Utils.readFile(settingsFile);
-            System.out.println(input);
+            //System.out.println(input);
             JSONObject graph = new JSONObject(input);
             return graph;
         }else{
@@ -673,18 +673,18 @@ private void update() {
         }
     }
     private void setSettings(JSONObject settings) {
-        System.out.println("setsettings");
-        System.out.println(settings.toString());
+        //System.out.println("setsettings");
+        //System.out.println(settings.toString());
         JSONObject originalSettings = getSettings();
-        System.out.println(originalSettings.toString());
+        //System.out.println(originalSettings.toString());
 
         try {
             for(String key: settings.toMap().keySet()){
                 originalSettings.put(key,settings.get(key));
-                System.out.println(key);
-                System.out.println(settings.get(key));
+                // System.out.println(key);
+                // System.out.println(settings.get(key));
             }
-            System.out.println(originalSettings);
+            //System.out.println(originalSettings);
             JSON.std.write(JSON.std.anyFrom(originalSettings.toString()), settingsFile.getAbsoluteFile());
             //Files.writeString(Paths.get(settingsFile.toURI()),originalSettings.toString());
         } catch (IOException e) {
@@ -778,11 +778,11 @@ private void update() {
                 }
                 JSONObject settings = new JSONObject();
                 String newrandomuuid = Utils.unique();
-                System.out.println(newrandomuuid);
+                //System.out.println(newrandomuuid);
                 settings.put("usageID", newrandomuuid);
         
                 userID = newrandomuuid;
-                System.out.println(settings.toString());
+                //System.out.println(settings.toString());
                 try {
                     JSON.std.write(JSON.std.anyFrom(settings.toString()), settingsFile.getAbsoluteFile());
                 } catch (IOException e) {
@@ -794,10 +794,10 @@ private void update() {
                 userID = settings.getString("usageID");
                 consent = settings.getString("Consent");
                 remind = settings.getString("Remind");
-                System.out.println("Found settings file");
-                System.out.println(userID);
-                System.out.println(consent);
-                System.out.println(remind);
+                // System.out.println("Found settings file");
+                // System.out.println(userID);
+                // System.out.println(consent);
+                // System.out.println(remind);
             }
         } else {
             //archiver.info("Retriving Existing Quickpose Session");
