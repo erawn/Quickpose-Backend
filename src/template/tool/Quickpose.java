@@ -40,7 +40,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.awt.Desktop;
-
 import net.lingala.zip4j.model.ZipParameters;
 import net.lingala.zip4j.model.enums.CompressionLevel;
 import net.lingala.zip4j.ZipFile;
@@ -59,6 +58,7 @@ import org.bson.BSON;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import processing.app.Base;
@@ -90,7 +90,7 @@ public class Quickpose implements Tool {
     private File exportFolder;
     private File versionsCode;
     private File versionsTree;
-
+    private File settingsFile;
     public Tree codeTree;
     public int currentVersion;
   
@@ -98,13 +98,18 @@ public class Quickpose implements Tool {
 
     private org.slf4j.Logger logger = LoggerFactory.getLogger(Quickpose.class);
     private java.util.logging.Logger archiver = java.util.logging.Logger.getLogger("ArchiveLog"); 
+    private java.util.logging.Logger usageData = java.util.logging.Logger.getLogger("usageData"); 
     FileHandler logFileHandler;
+    FileHandler usageDataFileHandler;
 
+    private volatile String userID = "";
+    private volatile String consent = "";
+    private volatile String remind = "";
     private Lock renderLock = new ReentrantLock();
     private Lock tldrLock = new ReentrantLock();
     Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     Queue<String> messages = new ConcurrentLinkedQueue<>();
-    ThumbnailWebSocket handler = new ThumbnailWebSocket(messages,sessions,archiver);
+    ThumbnailWebSocket handler = new ThumbnailWebSocket(messages,sessions,archiver, usageData);
 
     public void run() {
         //make new if on existing file 
@@ -191,6 +196,14 @@ private void update() {
                             }
                         }
                     }
+                    obj.put("userID",userID);
+                    if(consent.equals("Enabled") && remind.equals("False")){
+                        obj.put("Consent","EnabledNoPrompt");
+                    } else if(consent.equals("Disabled") && remind.equals("False")){
+                        obj.put("Consent","DisabledNoPrompt");
+                    } else {
+                        obj.put("Consent","Prompt");
+                    }
                     handler.broadcastData(ByteBuffer.wrap(BSON.encode(obj)));
                         
                     if (codeTree.getNode(currentVersion).children.size() != 0){
@@ -256,7 +269,8 @@ private void update() {
             boolean autorun = (param.contentEquals("true")) ? true : false;
             int childID = fork(Integer.parseInt(request.params(":id")),autorun);
             if (childID > 0) {
-                archiver.info("Forked"+Integer.parseInt(request.params(":id")) + "to" + childID);
+                archiver.info("Forked:"+Integer.parseInt(request.params(":id")) + "| From:" + childID);
+                usageData.info("Forked:"+Integer.parseInt(request.params(":id")) + "| From:" + childID);
                 currentVersion = childID;
                 return codeTree.getJSONSave(currentVersion, sketchFolder.getName());
             }
@@ -264,7 +278,8 @@ private void update() {
             return response;
         });
         get("/select/:id", (request, response) -> {
-            archiver.info("Selected"+Integer.parseInt(request.params(":id"))+"| From:"+currentVersion);
+            archiver.info("Selected:"+Integer.parseInt(request.params(":id"))+"| From:"+currentVersion);
+            usageData.info("Selected:"+Integer.parseInt(request.params(":id"))+"| From:"+currentVersion);
             String param = request.queryParams("Autorun");
             boolean autorun = (param.contentEquals("true")) ? true : false;
             currentVersion = changeActiveVersion(Integer.parseInt(request.params(":id")),autorun);
@@ -305,6 +320,52 @@ private void update() {
         });
         post("/log", (request, response) -> {
             archiver.info(request.body());
+            return "Success";
+        });
+        post("/usageData", (request, response) -> {
+            usageData.info(request.body());
+            return "Success";
+        });
+        get("/usageData", (request, response) -> {
+            File usageData = new File(archiveFolder.getPath()+"/usageData.log");  
+            try (OutputStream out = response.raw().getOutputStream()) {
+                response.header("Content-Disposition", "filename=usageData.txt");
+                Files.copy(usageData.toPath(), out);
+                out.flush();
+                response.status(200);
+            }
+            return response;
+        });
+        get("/usageID", (request, response) -> {
+            return getSettings().getString("usageID");
+        });
+
+        get("/usageConsent", (request, response) -> {
+            try{
+                JSONObject settings = getSettings();
+                String consent = settings.getString("Consent");
+                String remind = settings.getString("Remind");
+                if(consent.equals("Enabled") && remind.equals("False")){
+                    return "EnabledNoPrompt";
+                } else if(consent.equals("Disabled") && remind.equals("False")){
+                    return "DisabledNoPrompt";
+                } else {
+                    return "Prompt";
+                }
+            }catch(JSONException e){
+                archiver.info(e.getMessage()); 
+            }
+            return "Prompt";
+    
+        });
+
+        post("/usageConsent", (request, response) -> {
+            JSONObject settings = getSettings();
+            settings.remove("Consent");
+            settings.put("Consent", request.queryParams("Consent"));
+            settings.remove("Remind");
+            settings.put("Remind", request.queryParams("Remind"));
+            setSettings(settings);
             return "Success";
         });
         post("/tldrfile_backup", (request, response) -> {
@@ -380,6 +441,7 @@ private void update() {
                 File export = new File(exportFolder.toPath()+"/"+color+"_export_"+LocalDateTime.now().toString().replace(':', '-'));
                 export.mkdir();
                 archiver.info("Export ids:"+ids+"|by color:"+color);
+                usageData.info("Export ids:"+ids+"|by color:"+color);
                 for(Integer i : versions){
                     File versionFolder = new File(versionsCode.getAbsolutePath() + "/_" + i);
                     if(versionFolder.exists()){
@@ -549,7 +611,7 @@ private void update() {
         editor.getSketch().reload();
         editor.handleSave(true);
         try{
-            if(editor.getSketch().getCode(0) != null){
+            if(editor.getSketch().getCode() != null){
                 if (codeTree.getNode(id).children.size() == 0){
                     editor.getPdeTextArea().setEditable(true);
                     editor.getTextArea().updateTheme();
@@ -600,6 +662,36 @@ private void update() {
         return relPath;
     }
 
+    private JSONObject getSettings() {
+        if(settingsFile.exists()){
+            String input = Utils.readFile(settingsFile);
+            //System.out.println(input);
+            JSONObject graph = new JSONObject(input);
+            return graph;
+        }else{
+            return new JSONObject();
+        }
+    }
+    private void setSettings(JSONObject settings) {
+        //System.out.println("setsettings");
+        //System.out.println(settings.toString());
+        JSONObject originalSettings = getSettings();
+        //System.out.println(originalSettings.toString());
+
+        try {
+            for(String key: settings.toMap().keySet()){
+                originalSettings.put(key,settings.get(key));
+                // System.out.println(key);
+                // System.out.println(settings.get(key));
+            }
+            //System.out.println(originalSettings);
+            JSON.std.write(JSON.std.anyFrom(originalSettings.toString()), settingsFile.getAbsoluteFile());
+            //Files.writeString(Paths.get(settingsFile.toURI()),originalSettings.toString());
+        } catch (IOException e) {
+            archiver.info(e.getMessage()); 
+        }
+    }
+
     private void dataSetup() {
         editor = base.getActiveEditor();
         sketchFolder = editor.getSketch().getFolder();
@@ -612,6 +704,7 @@ private void update() {
         archiveFolder.mkdir();
         exportFolder = new File(versionsCode.toPath() + "/" + "exports");
         exportFolder.mkdir();
+        settingsFile = new File(Base.getSketchbookToolsFolder().toPath() + "/Quickpose/settings.json");
 
         class checkpoint implements ActionListener {
             public void actionPerformed(ActionEvent evt) {
@@ -631,7 +724,12 @@ private void update() {
             logFileHandler.setFormatter(formatter);  
             archiver.setUseParentHandlers(false);
             archiver.info("##tool.name## (v##tool.prettyVersion##) by ##author.name##");
-            //) logger);
+
+            usageDataFileHandler = new FileHandler(archiveFolder.getPath()+"/usageData.log",true);  
+            usageData.addHandler(usageDataFileHandler);
+            usageDataFileHandler.setFormatter(formatter);  
+            usageData.setUseParentHandlers(false);
+            usageData.info("Logger Initialized");
     
         } catch (SecurityException e) {  
             archiver.info(e.getMessage()); 
@@ -668,12 +766,46 @@ private void update() {
             checkpoint(0); //Backup first state to compare for checkpoints
             changeActiveVersion(0,false);
             writeJSONFromRoot();
+            //editor.getSketch().reload();
+            
+            if(!settingsFile.exists()){
+                //System.out.println("No Settings File Found, making new one");
+                try {
+                    settingsFile.createNewFile();
+                } catch (IOException e) {
+                    archiver.info(e.getMessage());
+                    
+                }
+                JSONObject settings = new JSONObject();
+                String newrandomuuid = Utils.unique();
+                //System.out.println(newrandomuuid);
+                settings.put("usageID", newrandomuuid);
+        
+                userID = newrandomuuid;
+                //System.out.println(settings.toString());
+                try {
+                    JSON.std.write(JSON.std.anyFrom(settings.toString()), settingsFile.getAbsoluteFile());
+                } catch (IOException e) {
+
+                    archiver.info(e.getMessage());
+                }
+            }else{
+                JSONObject settings = getSettings();
+                userID = settings.getString("usageID");
+                consent = settings.getString("Consent");
+                remind = settings.getString("Remind");
+                // System.out.println("Found settings file");
+                // System.out.println(userID);
+                // System.out.println(consent);
+                // System.out.println(remind);
+            }
         } else {
             //archiver.info("Retriving Existing Quickpose Session");
             archiver.info("Quickpose: Existing Quickpose Session Found! Loading...");
             readJSONToRoot();
+            editor.getSketch().reload();
         }
-        editor.getSketch().reload();
+        
     }
     private void promptCheckpoint(int id){
         if(shouldCheckpoint(id)){
@@ -758,7 +890,6 @@ private void update() {
             JSONObject graph = new JSONObject(input);
             JSONArray nodes = graph.getJSONArray("Nodes");
             JSONArray edges = graph.getJSONArray("Edges");
-
             int rootInd = JSONSearch(nodes, 0);
             if (rootInd == -1) {
                 archiver.info("Couldn't Find Root Node on Import");
@@ -836,7 +967,7 @@ private void update() {
             tldrLock = new ReentrantLock();
             sessions = new ConcurrentLinkedQueue<>();
             messages = new ConcurrentLinkedQueue<>();
-            handler = new ThumbnailWebSocket(messages,sessions,archiver);
+            handler = new ThumbnailWebSocket(messages,sessions,archiver, usageData);
             executor = null;
             setup = false;
             sketchFolder = null;

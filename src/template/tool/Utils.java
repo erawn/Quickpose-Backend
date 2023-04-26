@@ -8,7 +8,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
-
+import java.security.SecureRandom;
 
 import org.apache.commons.io.FileUtils;
 
@@ -22,6 +22,18 @@ public final class Utils {
         logger = log;
         archiver = archive; 
     }
+    
+    private static volatile SecureRandom numberGenerator = null;
+    private static final long MSB = 0x8000000000000000L;
+
+    public static String unique() {
+        SecureRandom ng = numberGenerator;
+        if (ng == null) {
+            numberGenerator = ng = new SecureRandom();
+        }
+
+        return Long.toHexString(MSB | ng.nextLong()) + Long.toHexString(MSB | ng.nextLong());
+    } 
 
     public static org.slf4j.Logger getLogger(){
         return logger;
@@ -87,6 +99,7 @@ public final class Utils {
             //archiver.info(e.getMessage());
         } 
     }
+
 //oldFolder is base folder (aka sketchFolder), new folder is the version folder
 //new folder is the folder thats *supposed* to be newer
     public static Boolean compareDirs(File oldFolder, File newFolder){

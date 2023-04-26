@@ -14,13 +14,15 @@ public class ThumbnailWebSocket {
     // Store sessions if you want to, for example, broadcast a message to all users
     private static Queue<Session> sessions;
     private static java.util.logging.Logger archiver;
+    private static java.util.logging.Logger usageData;
     private static ScheduledExecutorService executor;
     private static Queue<String> messageQueue;
 
-    public ThumbnailWebSocket(Queue<String> msgQueue, Queue<Session> sessionQueue, java.util.logging.Logger archive){
+    public ThumbnailWebSocket(Queue<String> msgQueue, Queue<Session> sessionQueue, java.util.logging.Logger archive, java.util.logging.Logger usageLogger){
         sessions = sessionQueue;
         messageQueue = msgQueue;
         archiver = archive; 
+        usageData = usageLogger;
         executor = Executors.newScheduledThreadPool(2);
     }
     @OnWebSocketConnect
@@ -28,6 +30,8 @@ public class ThumbnailWebSocket {
         if(!sessions.contains(session)){
             sessions.add(session);
             archiver.info("added session");
+            usageData.info("added session");
+            
 
         }
     }
@@ -36,6 +40,7 @@ public class ThumbnailWebSocket {
     public void closed(Session session, int statusCode, String reason) {
         sessions.remove(session);
         archiver.info("removed session");
+        usageData.info("removed session");
     }
 
     @OnWebSocketMessage
