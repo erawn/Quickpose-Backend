@@ -769,7 +769,7 @@ private void update() {
             //editor.getSketch().reload();
             
             if(!settingsFile.exists()){
-                System.out.println("No Settings File Found, making new one");
+                //System.out.println("No Settings File Found, making new one");
                 try {
                     settingsFile.createNewFile();
                 } catch (IOException e) {
